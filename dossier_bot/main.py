@@ -7,6 +7,7 @@ import contextlib
 import html
 import json
 import logging
+import secrets
 import sys
 import time
 from collections import OrderedDict
@@ -305,7 +306,7 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
     @router.callback_query(F.data == "d:start")
     async def begin_dossier(callback: CallbackQuery, state: FSMContext) -> None:
         await state.clear(); await state.set_state(UserFlow.gender)
-        await state.update_data(media=[])
+        await state.update_data(media=[], video_allowed=secrets.randbelow(2) == 0)
         await callback.answer()
         if callback.message:
             await callback.message.answer("Выбери категорию:", reply_markup=gender_keyboard())
@@ -366,25 +367,62 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         description = (message.text or "").strip()
         if not description or len(description) > 600:
             await send(message, "Нужен текст от 1 до 600 символов."); return
+        draft = await state.get_data()
+        video_allowed = bool(draft.get("video_allowed"))
         await state.update_data(description=description, media=[])
         await state.set_state(UserFlow.media)
-        await send(message, "Пришли фото или видео о себе (до 10 файлов) либо пропусти шаг. Медиа увидит только модератор.", media_keyboard())
+        if video_allowed:
+            media_instructions = (
+                "Пришли до 3 фото ИЛИ не больше 1 фото и 1 видео. "
+                "Для этой анкеты видео доступно (случайный шанс 50%). Если хочешь добавить видео, загрузи максимум одно фото. "
+            )
+        else:
+            media_instructions = (
+                "Пришли до 3 фото. Видео для этой анкеты не выпало (шанс 50%). "
+            )
+        await send(
+            message,
+            media_instructions + "Медиа увидит только модератор. Можно пропустить шаг.",
+            media_keyboard(),
+        )
 
     @router.message(UserFlow.media, F.photo | F.video)
     async def get_media(message: Message, state: FSMContext) -> None:
-        draft = await state.get_data(); media = draft.get("media", [])
-        if len(media) >= 10:
-            await send(message, "Лимит 10 файлов. Пропусти шаг, чтобы продолжить.", media_keyboard()); return
-        media.append(
-            {"type": "photo", "file_id": message.photo[-1].file_id}
-            if message.photo else {"type": "video", "file_id": message.video.file_id}
-        )
+        draft = await state.get_data()
+        media = draft.get("media", [])
+        if not isinstance(media, list):
+            media = []
+        video_allowed = bool(draft.get("video_allowed"))
+        photo_count = sum(item.get("type") == "photo" for item in media if isinstance(item, dict))
+        video_count = sum(item.get("type") == "video" for item in media if isinstance(item, dict))
+
+        if message.photo:
+            if video_count:
+                await send(message, "С видео можно прикрепить только одно фото. Уже добавленные файлы сохранены.", media_keyboard()); return
+            if photo_count >= 3:
+                await send(message, "Лимит — 3 фото. Уже добавленные файлы сохранены.", media_keyboard()); return
+            media.append({"type": "photo", "file_id": message.photo[-1].file_id})
+        else:
+            if not video_allowed:
+                await send(message, "Видео для этой анкеты недоступно. Можно добавить до 3 фото.", media_keyboard()); return
+            if video_count:
+                await send(message, "Можно прикрепить только одно видео. Уже добавленные файлы сохранены.", media_keyboard()); return
+            if photo_count > 1:
+                await send(message, "Для варианта с видео можно добавить только одно фото. Уже добавленные фото сохранены; можешь продолжить без видео.", media_keyboard()); return
+            media.append({"type": "video", "file_id": message.video.file_id})
+
         await state.update_data(media=media)
-        await send(message, f"Файл добавлен ({len(media)}/10). Можно прислать ещё или перейти дальше.", media_keyboard())
+        photo_count = sum(item.get("type") == "photo" for item in media if isinstance(item, dict))
+        video_count = sum(item.get("type") == "video" for item in media if isinstance(item, dict))
+        await send(
+            message,
+            f"Добавлено: {photo_count} фото и {video_count} видео. Можно добавить ещё в пределах лимита или перейти дальше.",
+            media_keyboard(),
+        )
 
     @router.message(UserFlow.media)
     async def unsupported_media(message: Message) -> None:
-        await send(message, "Подойдут только фото и видео. Можно пропустить этот шаг.", media_keyboard())
+        await send(message, "Подойдут только фото или видео в пределах показанного лимита. Можно пропустить этот шаг.", media_keyboard())
 
     @router.callback_query(F.data == "d:skip")
     async def skip_media(callback: CallbackQuery, state: FSMContext) -> None:
