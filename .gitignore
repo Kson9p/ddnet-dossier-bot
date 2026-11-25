@@ -1,0 +1,44 @@
+# Секреты
+.env
+.env.*
+!.env.example
+
+# Виртуальные окружения
+.venv/
+.venv-dossier/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Локальная база и технические файлы SQLite
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Логи
+logs/
+*.log
+
+# Редакторы и ОС
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
