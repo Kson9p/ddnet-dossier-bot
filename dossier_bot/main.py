@@ -536,7 +536,8 @@ async def run(settings: Settings, *, handle_signals: bool = True) -> None:
     store = DossierStore(settings.database_path)
     bot = Bot(
         settings.token,
-        session=AiohttpSession(timeout=25.0),
+        # Keep the HTTP session alive longer than the long-poll request.
+        session=AiohttpSession(timeout=40.0),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dispatcher = Dispatcher(storage=MemoryStorage())
@@ -566,7 +567,8 @@ async def run(settings: Settings, *, handle_signals: bool = True) -> None:
         await bot.get_updates(timeout=1, limit=1, allowed_updates=allowed_updates)
         log.info("Бот @%s принимает обновления. Начинаем long polling.", me.username or "bot")
         polling = asyncio.create_task(dispatcher.start_polling(
-            bot, allowed_updates=allowed_updates, close_bot_session=False,
+            bot, allowed_updates=allowed_updates, polling_timeout=30,
+            close_bot_session=False,
             handle_signals=handle_signals, handle_as_tasks=False,
         ))
         try:
