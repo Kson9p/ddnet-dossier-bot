@@ -426,13 +426,22 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
                 message_ids.append(sent.message_id)
             await store.set_messages(dossier_id, message_ids)
         except TelegramAPIError as exc:
-            log.warning("Could not deliver dossier to owner (%s)", type(exc).__name__)
+            reason = str(getattr(exc, "message", ""))[:200]
+            log.warning(
+                "Could not deliver dossier to owner (%s): %s",
+                type(exc).__name__, reason or "Telegram API returned an error",
+            )
             await store.delete(dossier_id)
             copies_deleted = await delete_admin_copies(bot, settings.owner_id, json.dumps(message_ids))
             if not copies_deleted:
-                await bot.send_message(settings.owner_id, "Не удалось убрать все частично отправленные копии заявки. Проверь сообщения модерации.")
+                with contextlib.suppress(TelegramAPIError):
+                    await bot.send_message(
+                        settings.owner_id,
+                        "Не удалось убрать все частично отправленные копии заявки. Проверь сообщения модерации.",
+                    )
             delivered = False
-        await state.clear()
+        if delivered:
+            await state.clear()
         await callback.answer("Передано на проверку" if delivered else "Не удалось передать")
         if callback.message:
             if delivered:
@@ -441,7 +450,11 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
                     reply_markup=withdraw_keyboard(dossier_id),
                 )
             else:
-                await callback.message.answer("Не удалось передать досье модератору. Черновик удалён; попробуй позже.")
+                await callback.message.answer(
+                    "Не удалось отправить анкету модератору. Данные остались на этом шаге — повтори отправку позже. "
+                    "Проверь, что DOSSIER_OWNER_ID указан верно и владелец уже нажал /start именно в этом боте.",
+                    reply_markup=confirm_keyboard(),
+                )
 
     @router.callback_query(F.data == "d:back")
     async def back_dossier(callback: CallbackQuery, state: FSMContext) -> None:
