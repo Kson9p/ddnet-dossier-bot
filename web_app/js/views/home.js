@@ -7,7 +7,6 @@ import { plural } from '../utils/format.js';
 import { openAboutSheet } from '../ui/aboutSheet.js';
 import { showToast } from '../ui/toast.js';
 import {
-  appHeader,
   button,
   playerCard,
   skeletonList,
@@ -96,15 +95,6 @@ export function renderHome({ root, signal, scrollY = 0 }) {
   );
 
   const view = el('div', { class: 'view view--home' }, [
-    appHeader({
-      title: 'Анкеты DDNet',
-      subtitle: 'Каталог игроков DDNet',
-      logo: true,
-      titleTag: 'h1',
-      actions: [
-        { iconName: 'info', label: 'О приложении', onClick: () => openAboutSheet() },
-      ],
-    }),
     el('main', { class: 'home' }, [
       el('div', { class: 'home__top' }, [
         searchBox,

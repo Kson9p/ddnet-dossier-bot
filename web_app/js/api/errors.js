@@ -1,7 +1,7 @@
 /** Ошибки слоя данных с понятными кодами для интерфейса. */
 export class PlayersApiError extends Error {
   /**
-   * @param {'network' | 'server' | 'not_found' | 'not_approved' | 'invalid_data'} code
+   * @param {'network' | 'server' | 'not_found' | 'not_approved' | 'invalid_data' | 'forbidden'} code
    * @param {string} message
    * @param {{ status?: number }} [options]
    */
@@ -19,4 +19,5 @@ export const API_ERROR_TEXT = {
   not_found: 'Анкета не найдена или была удалена.',
   not_approved: 'Эта анкета недоступна: она не прошла модерацию.',
   invalid_data: 'Сервер вернул данные в неожиданном формате.',
+  forbidden: 'Нет прав для этого действия.',
 };

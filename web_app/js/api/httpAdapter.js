@@ -161,7 +161,57 @@ export function createHttpPlayersApi(options = {}) {
     }
   }
 
+  function getInitData() {
+    return globalThis.window?.Telegram?.WebApp?.initData ?? '';
+  }
+
+  async function isAdmin() {
+    const initData = getInitData();
+    if (!initData) return false;
+    try {
+      const response = await fetchImpl(`${baseUrl}/admin/session`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json', 'X-Telegram-Init-Data': initData },
+      });
+      if (!response.ok) return false;
+      const payload = await response.json();
+      return isObject(payload) && payload.isAdmin === true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function deletePlayer(id) {
+    const initData = getInitData();
+    if (!initData) {
+      throw new PlayersApiError('forbidden', 'Удаление доступно только владельцу в Telegram.');
+    }
+    let response;
+    try {
+      response = await fetchImpl(`${baseUrl}/players/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json', 'X-Telegram-Init-Data': initData },
+      });
+    } catch {
+      throw new PlayersApiError('network', 'Не удалось связаться с сервером.');
+    }
+    if (response.status === 403) {
+      throw new PlayersApiError('forbidden', 'Нет прав на удаление этой анкеты.', { status: 403 });
+    }
+    if (response.status === 404) {
+      throw new PlayersApiError('not_found', 'Анкета уже удалена.', { status: 404 });
+    }
+    if (!response.ok) {
+      throw new PlayersApiError('server', `Ошибка сервера (${response.status})`, { status: response.status });
+    }
+    return true;
+  }
+
   return {
+    isAdmin,
+    deletePlayer,
     /** @param {import('./types.js').PlayerListParams} [params] */
     async getPlayers(params = {}) {
       const { query = '', sort = 'default', page = 1, pageSize = config.pageSize, signal } = params;

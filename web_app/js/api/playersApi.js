@@ -13,6 +13,8 @@ import { createHttpPlayersApi } from './httpAdapter.js';
 const adapter = createHttpPlayersApi();
 
 export const playersApi = {
+  isAdmin: () => adapter.isAdmin(),
+  deletePlayer: (id) => adapter.deletePlayer(id),
   /** @param {import('./types.js').PlayerListParams} [params] */
   getPlayers: (params = {}) => adapter.getPlayers(params),
 

@@ -34,7 +34,6 @@ from handlers.user import create_user_router
 from services.dossier_process import run_dossier_after_polling
 from services.media_groups import MediaGroupBuffer
 from services.middleware import UpdateDeduperMiddleware
-from services.mini_app import serve_mini_app_after_polling
 from services.rate_limit import NoticeThrottle, RateLimiter
 from services.relay import RelayService
 from services.telegram import safe_telegram_call
@@ -281,10 +280,6 @@ async def run_bot(settings: Settings) -> int:
             run_dossier_after_polling(polling_ready, me.id, settings.database_path),
             name="dossier_bot",
         )
-        website_task = asyncio.create_task(
-            serve_mini_app_after_polling(polling_ready),
-            name="mini_app_web",
-        )
         try:
             await dispatcher.start_polling(
                 bot,
@@ -307,9 +302,6 @@ async def run_bot(settings: Settings) -> int:
             dossier_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await dossier_task
-            website_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await website_task
             if maintenance_task is not None:
                 maintenance_task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):

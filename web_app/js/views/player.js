@@ -52,7 +52,9 @@ export function renderPlayer({ root, params, signal, goBack }) {
     try {
       const player = await playersApi.getPlayer(id, { signal });
       if (signal.aborted) return;
-      renderProfile(player);
+      const isAdmin = await playersApi.isAdmin();
+      if (signal.aborted) return;
+      renderProfile(player, isAdmin);
     } catch (error) {
       if (signal.aborted || error?.name === 'AbortError') return;
       renderError(error);
@@ -87,7 +89,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
   }
 
   /** @param {import('../api/types.js').PlayerRecord} player */
-  function renderProfile(player) {
+  function renderProfile(player, isAdmin = false) {
     const stats = player.stats;
     const gallery = player.gallery;
     const liveLocation = player.online && (player.currentServer || player.currentMap);
@@ -178,11 +180,34 @@ export function renderPlayer({ root, params, signal, goBack }) {
           ),
         ]) : null,
 
+        isAdmin ? el('section', { class: 'section profile-admin-actions' }, [
+          button({
+            label: 'Удалить анкету',
+            variant: 'danger',
+            className: 'btn--block',
+            onClick: () => deleteProfile(player),
+          }),
+        ]) : null,
+
       ]),
     ]);
 
     content.replaceChildren(profile);
     view.appendChild(actionBar(player));
+  }
+
+  async function deleteProfile(player) {
+    if (!window.confirm(`Удалить анкету ${player.nick}? Это действие нельзя отменить.`)) return;
+    try {
+      await playersApi.deletePlayer(player.id);
+      showToast('Анкета удалена', { iconName: 'check' });
+      goBack();
+    } catch (error) {
+      showToast(error?.message || 'Не удалось удалить анкету', {
+        iconName: 'alert',
+        tone: 'danger',
+      });
+    }
   }
 
   /** @param {import('../api/types.js').GalleryItem} item @param {number} index @param {import('../api/types.js').GalleryItem[]} gallery */

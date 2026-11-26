@@ -3,20 +3,49 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 import json
 import logging
 import os
 from pathlib import Path
 import re
+import time
+from urllib.parse import parse_qsl
 
 import aiohttp
 from aiohttp import web
 from aiogram import Bot
+from aiogram.exceptions import TelegramAPIError
 
 from dossier_bot.store import DossierStore
 
 log = logging.getLogger(__name__)
 WEB_APP_DIR = Path(__file__).resolve().parent.parent / "web_app"
+
+
+def _telegram_owner(init_data: str, bot_token: str, owner_id: int) -> bool:
+    """Validate Telegram Mini App initData and match its user to the owner."""
+    if not init_data or len(init_data) > 8192:
+        return False
+    try:
+        pairs = parse_qsl(init_data, keep_blank_values=True, strict_parsing=True)
+        fields = dict(pairs)
+        if len(fields) != len(pairs):
+            return False
+        received_hash = fields.pop("hash")
+        auth_date = int(fields["auth_date"])
+        user = json.loads(fields["user"])
+        user_id = user.get("id") if isinstance(user, dict) else None
+        now = int(time.time())
+        if now - auth_date > 86_400 or auth_date > now + 60 or type(user_id) is not int:
+            return False
+        check_string = "\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
+        secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
+        expected_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(received_hash, expected_hash) and user_id == owner_id
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return False
 
 
 async def serve_mini_app_after_polling(
@@ -25,6 +54,7 @@ async def serve_mini_app_after_polling(
     delay_seconds: int = 10,
     store: DossierStore | None = None,
     bot: Bot | None = None,
+    owner_id: int | None = None,
 ) -> None:
     """Start serving 10 seconds after Telegram polling is known to be ready."""
     if polling_ready is not None:
@@ -46,6 +76,43 @@ async def serve_mini_app_after_polling(
         return
 
     app = web.Application()
+
+    async def admin_session(request: web.Request) -> web.Response:
+        is_admin = bool(
+            bot is not None
+            and owner_id is not None
+            and _telegram_owner(
+                request.headers.get("X-Telegram-Init-Data", ""), bot.token, owner_id
+            )
+        )
+        return web.json_response({"isAdmin": is_admin}, headers={"Cache-Control": "no-store"})
+
+    async def delete_player(request: web.Request) -> web.Response:
+        if store is None or bot is None or owner_id is None:
+            raise web.HTTPServiceUnavailable()
+        if not _telegram_owner(
+            request.headers.get("X-Telegram-Init-Data", ""), bot.token, owner_id
+        ):
+            raise web.HTTPForbidden()
+        try:
+            dossier_id = int(request.match_info["player_id"])
+        except ValueError:
+            raise web.HTTPNotFound() from None
+        row = await store.get(dossier_id)
+        if row is None or not await store.delete(dossier_id):
+            raise web.HTTPNotFound()
+        try:
+            message_ids = json.loads(row.get("admin_messages_json", "[]"))
+        except (TypeError, json.JSONDecodeError):
+            message_ids = []
+        if isinstance(message_ids, list):
+            for message_id in message_ids:
+                try:
+                    await bot.delete_message(owner_id, int(message_id))
+                except (TelegramAPIError, TypeError, ValueError):
+                    # The dossier is already removed from the database and public API.
+                    pass
+        return web.json_response({"deleted": True}, headers={"Cache-Control": "no-store"})
 
     async def public_record(row: dict, *, summary: bool = False) -> dict:
         try:
@@ -158,6 +225,8 @@ async def serve_mini_app_after_polling(
     app.router.add_get("/api/players", list_players)
     app.router.add_get("/api/players/{player_id}/media/{media_index}", get_player_media)
     app.router.add_get("/api/players/{player_id}", get_player)
+    app.router.add_get("/api/admin/session", admin_session)
+    app.router.add_delete("/api/players/{player_id}", delete_player)
     # Keep developer notes and local tools out of the public route.
     app.router.add_static("/css/", WEB_APP_DIR / "css", show_index=False)
     app.router.add_static("/js/", WEB_APP_DIR / "js", show_index=False)

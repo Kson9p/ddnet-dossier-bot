@@ -690,6 +690,19 @@
   -webkit-backdrop-filter: blur(16px) saturate(150%);
 }
 
+.btn--danger {
+  background: #9b433d;
+  color: #fff;
+}
+
+.btn--danger:active {
+  background: #803831;
+}
+
+.profile-admin-actions {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
 .action-bar__inner {
   display: flex;
   gap: 10px;

@@ -16,6 +16,9 @@ same SQLite database. It lists only dossiers whose moderation status is
 The browser never receives the Telegram bot token or Telegram user ID. Approved
 photos and videos are proxied by the server at `/api/players/{id}/media/{index}`.
 Rejecting or deleting a dossier removes it from public API results immediately.
+The delete control is shown only inside Telegram to the configured owner. The
+server validates Telegram's signed `initData` before deleting a record; an
+owner ID or bot token is never sent to the browser.
 
 ## Hosting
 
