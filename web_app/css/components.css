@@ -280,7 +280,7 @@
 
 .player-card__cover {
   position: relative;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -322,21 +322,30 @@
 .player-card__row {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 8px;
 }
 
-.avatar {
-  display: block;
-  border-radius: 50%;
-  object-fit: cover;
+.player-card__category {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
   background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 10.5px;
+  line-height: 1.2;
 }
 
-.player-card__avatar {
-  width: 50px;
-  height: 50px;
-  flex: 0 0 auto;
-  border: 2px solid var(--surface-2);
+.player-card__category--girl {
+  background: rgba(207, 126, 186, 0.18);
+  color: #f1b8e2;
+}
+
+.player-card__category--boy {
+  background: rgba(92, 178, 224, 0.17);
+  color: #a4dcf7;
 }
 
 .player-card__titles {
@@ -594,15 +603,8 @@
 }
 
 .skeleton--cover {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
   border-radius: 0;
-}
-
-.skeleton--avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  flex: 0 0 auto;
 }
 
 .skeleton--line {

@@ -12,7 +12,6 @@ import {
 import { openAboutSheet } from '../ui/aboutSheet.js';
 import {
   appHeader,
-  avatar,
   button,
   sectionTitle,
   stateView,
@@ -66,7 +65,6 @@ export function renderPlayer({ root, params, signal, goBack }) {
       el('div', { class: 'player-skeleton', attrs: { 'aria-busy': 'true', 'aria-label': 'Загрузка анкеты' } }, [
         el('div', { class: 'skeleton skeleton--hero' }),
         el('div', { class: 'player-skeleton__head' }, [
-          el('span', { class: 'skeleton skeleton--profile-avatar' }),
           el('span', { class: 'skeleton skeleton--line skeleton--w35' }),
           el('span', { class: 'skeleton skeleton--line skeleton--w55 skeleton--thin' }),
           el('span', { class: 'skeleton skeleton--line skeleton--w70 skeleton--thin' }),
@@ -125,12 +123,6 @@ export function renderPlayer({ root, params, signal, goBack }) {
             : null,
         ]),
         el('div', { class: 'profile-hero__identity' }, [
-          el('div', { class: 'profile-hero__avatar-wrap' }, [
-            avatar(player.avatar, {
-              alt: `Аватар игрока ${player.nick}`,
-              className: 'profile-hero__avatar',
-            }),
-          ]),
           el('h1', { class: 'profile-hero__nick', text: player.nick }),
           stats.lastSeenHoursAgo !== null
             ? el('p', { class: 'profile-hero__meta' }, [

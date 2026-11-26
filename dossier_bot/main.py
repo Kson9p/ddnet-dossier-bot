@@ -99,14 +99,6 @@ def confirm_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-def stats_consent_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [button("Запросить статистику", "stats:fetch")],
-        [button("Пропустить запрос", "stats:skip")],
-        [button("Назад", "d:back"), button("Отмена", "d:cancel")],
-    ])
-
-
 def review_keyboard(dossier_id: int, *, pending: bool = True) -> InlineKeyboardMarkup:
     rows = []
     if pending:
@@ -264,7 +256,6 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
     router.message.filter(F.chat.type == "private", F.from_user.id != settings.owner_id)
     router.callback_query.filter(F.message.chat.type == "private", F.from_user.id != settings.owner_id)
     stats_provider = DdnetStatsProvider()
-    stats_throttle = UserActionThrottle(seconds=30)
     dossier_throttle = UserActionThrottle(seconds=30)
     support_throttle = UserActionThrottle(seconds=15)
 
@@ -333,34 +324,18 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         if not nickname or len(nickname) > 32 or nickname.startswith("/"):
             await send(message, "Введи ник текстом, до 32 символов, или используй /cancel."); return
         await state.update_data(nickname=nickname)
-        await state.update_data(
-            stats_text=""
-        )
-        await state.set_state(UserFlow.stats_consent)
+        await state.set_state(UserFlow.description)
+        try:
+            result = await stats_provider.fetch(nickname)
+            await state.update_data(stats_text=result.text)
+        except Exception as exc:
+            log.warning("DDNet lookup failed (%s).", type(exc).__name__)
+            await state.update_data(stats_text="")
         await send(
             message,
-            "Для статистики бот отправит твой ник сервисам DDStats, DDNet.org и Eternal Gores, чтобы получить очки, часы и публичные данные профиля. Также бот проверит публичный список серверов DDNet и покажет совпадение по нику на серверах Eternal Gores, если найдёт. Запрос необязателен: его можно пропустить.",
-            stats_consent_keyboard(),
+            "Статистика DDNet добавится автоматически, если для ника найдутся данные. Коротко расскажи о себе (до 600 символов). Не указывай контакты, адрес или сведения о других людях.",
+            cancel_keyboard(),
         )
-
-    @router.callback_query(F.data.in_({"stats:fetch", "stats:skip"}))
-    async def choose_stats_lookup(callback: CallbackQuery, state: FSMContext) -> None:
-        if await state.get_state() != UserFlow.stats_consent.state:
-            await callback.answer("Этот шаг уже завершён", show_alert=True); return
-        draft = await state.get_data()
-        if callback.data == "stats:fetch":
-            if stats_throttle.allow(callback.from_user.id):
-                result = await stats_provider.fetch(draft.get("nickname", ""))
-                await state.update_data(stats_text=result.text)
-            else:
-                await state.update_data(stats_text="")
-        await state.set_state(UserFlow.description)
-        await callback.answer("Запрошено" if callback.data == "stats:fetch" else "Пропущено")
-        if callback.message:
-            await callback.message.answer(
-                "Коротко расскажи о себе (до 600 символов). Не указывай контакты, адрес или сведения о других людях.",
-                reply_markup=cancel_keyboard(),
-            )
 
     @router.message(UserFlow.description)
     async def get_description(message: Message, state: FSMContext) -> None:
@@ -373,8 +348,7 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         await state.set_state(UserFlow.media)
         if video_allowed:
             media_instructions = (
-                "Пришли минимум 1 фото: до 3 фото либо 1 фото и 1 видео. "
-                "Для этого досье можно добавить видео. "
+                "Пришли от 1 до 3 фото или одно фото и одно видео. "
             )
         else:
             media_instructions = "Пришли от 1 до 3 фото. "
@@ -414,7 +388,11 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         video_count = sum(item.get("type") == "video" for item in media if isinstance(item, dict))
         await send(
             message,
-            f"Добавлено: {photo_count} фото и {video_count} видео. Для продолжения нужно минимум одно фото.",
+            (
+                f"Добавлено: {photo_count} фото и {video_count} видео. Для продолжения нужно минимум одно фото."
+                if video_allowed
+                else f"Добавлено фото: {photo_count}."
+            ),
             media_keyboard(),
         )
 
@@ -511,9 +489,6 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         if current == UserFlow.nickname.state:
             await state.set_state(UserFlow.gender)
             await callback.message.answer("Выбери категорию:", reply_markup=gender_keyboard())
-        elif current == UserFlow.stats_consent.state:
-            await state.set_state(UserFlow.nickname)
-            await callback.message.answer("Напиши свой точный DDNet ник.", reply_markup=cancel_keyboard())
         elif current == UserFlow.description.state:
             await state.set_state(UserFlow.nickname)
             await callback.message.answer("Напиши свой точный DDNet ник.", reply_markup=cancel_keyboard())
@@ -522,7 +497,7 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
             await callback.message.answer("Коротко расскажи о себе (до 600 символов).", reply_markup=cancel_keyboard())
         elif current == UserFlow.confirm.state:
             await state.set_state(UserFlow.media)
-            await callback.message.answer("Пришли фото или видео либо пропусти шаг.", reply_markup=media_keyboard())
+            await callback.message.answer("Пришли минимум одно фото и нажми «Готово».", reply_markup=media_keyboard())
 
     @router.callback_query(F.data == "d:cancel")
     async def cancel_dossier(callback: CallbackQuery, state: FSMContext) -> None:

@@ -2,19 +2,6 @@ import { el } from '../utils/dom.js';
 import { formatLastSeen, formatNumber } from '../utils/format.js';
 import { icon } from './icons.js';
 
-/** @param {string} src @param {{ alt?: string, className?: string }} [options] */
-export function avatar(src, options = {}) {
-  const { alt = '', className = '' } = options;
-  return el('img', {
-    class: `avatar ${className}`.trim(),
-    src,
-    alt,
-    loading: 'lazy',
-    decoding: 'async',
-    draggable: false,
-  });
-}
-
 /**
  * @param {{ iconName: keyof typeof import('./icons.js').default, label: string, onClick?: (event: Event) => void, className?: string }} options
  */
@@ -124,9 +111,12 @@ export function playerCard(player) {
       ]),
       el('div', { class: 'player-card__body' }, [
         el('div', { class: 'player-card__row' }, [
-          avatar(player.avatar, { className: 'player-card__avatar' }),
           el('div', { class: 'player-card__titles' }, [
             el('h2', { class: 'player-card__nick', text: player.nick }),
+            el('span', {
+              class: `player-card__category player-card__category--${player.gender}`,
+              text: player.gender === 'girl' ? 'Девушка' : 'Парень',
+            }),
             player.lastSeenHoursAgo !== null
               ? el('p', {
                   class: 'player-card__meta',
@@ -171,7 +161,6 @@ export function skeletonCard() {
     el('div', { class: 'skeleton skeleton--cover' }),
     el('div', { class: 'player-card__body' }, [
       el('div', { class: 'player-card__row' }, [
-        el('span', { class: 'skeleton skeleton--avatar' }),
         el('div', { class: 'skeleton-stack' }, [
           el('span', { class: 'skeleton skeleton--line skeleton--w40' }),
           el('span', { class: 'skeleton skeleton--line skeleton--w60 skeleton--thin' }),

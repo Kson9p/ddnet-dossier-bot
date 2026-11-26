@@ -63,7 +63,7 @@ class DossierStore:
         row = await cursor.fetchone()
         return dict(row) if row else None
 
-    async def list_approved(self, *, query: str = "", sort: str = "default", page: int = 1, page_size: int = 6) -> tuple[list[dict], int]:
+    async def list_approved(self, *, query: str = "", gender: str = "", sort: str = "default", page: int = 1, page_size: int = 6) -> tuple[list[dict], int]:
         cursor = await self._db().execute(
             "SELECT * FROM dossiers WHERE status='approved' ORDER BY created_at DESC, id DESC"
         )
@@ -71,6 +71,8 @@ class DossierStore:
         needle = query.strip().casefold()
         if needle:
             rows = [row for row in rows if needle in row["nickname"].casefold()]
+        if gender in {"boy", "girl"}:
+            rows = [row for row in rows if row.get("gender") == gender]
         if sort == "points":
             import re
             def points(row: dict) -> int:

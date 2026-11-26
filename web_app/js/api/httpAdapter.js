@@ -17,6 +17,7 @@ import { PlayersApiError } from './errors.js';
  */
 
 const VALID_SORTS = new Set(['default', 'points', 'maps']);
+const VALID_GENDERS = new Set(['', 'boy', 'girl']);
 
 /**
  * @param {unknown} value
@@ -45,15 +46,18 @@ function normalizeSummary(raw) {
   if (!isObject(raw.stats)) {
     throw new PlayersApiError('invalid_data', 'Некорректная статистика анкеты', { status: 502 });
   }
+  if (raw.gender !== 'boy' && raw.gender !== 'girl') {
+    throw new PlayersApiError('invalid_data', 'Некорректная категория анкеты', { status: 502 });
+  }
 
   return {
     id: requireString(raw.id, 'id'),
     nick: requireString(raw.nick, 'nick'),
+    gender: raw.gender,
     initials: typeof raw.initials === 'string' ? raw.initials : raw.nick.slice(0, 2).toUpperCase(),
     tagline: typeof raw.tagline === 'string' ? raw.tagline : '',
     online: raw.online === true,
     region: typeof raw.region === 'string' ? raw.region : '',
-    avatar: requireString(raw.avatar, 'avatar'),
     cover: requireString(raw.cover, 'cover'),
     badges: Array.isArray(raw.badges) ? raw.badges.filter((b) => typeof b === 'string') : [],
     lastSeenHoursAgo: optionalNumber(raw.lastSeenHoursAgo ?? raw.stats.lastSeenHoursAgo),
@@ -109,7 +113,6 @@ function normalizeDetail(raw) {
       joinedYear: optionalNumber(raw.stats.joinedYear),
       lastSeenHoursAgo: optionalNumber(raw.stats.lastSeenHoursAgo),
     },
-    avatar: requireString(raw.avatar, 'avatar'),
     cover: requireString(raw.cover, 'cover'),
     gallery,
   };
@@ -214,10 +217,11 @@ export function createHttpPlayersApi(options = {}) {
     deletePlayer,
     /** @param {import('./types.js').PlayerListParams} [params] */
     async getPlayers(params = {}) {
-      const { query = '', sort = 'default', page = 1, pageSize = config.pageSize, signal } = params;
+      const { query = '', sort = 'default', gender = '', page = 1, pageSize = config.pageSize, signal } = params;
       const search = new URLSearchParams({
         query: String(query),
         sort: VALID_SORTS.has(sort) ? sort : 'default',
+        gender: VALID_GENDERS.has(gender) ? gender : '',
         page: String(Math.max(1, Number(page) || 1)),
         pageSize: String(Math.max(1, Math.min(50, Number(pageSize) || config.pageSize))),
       });

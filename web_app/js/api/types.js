@@ -43,7 +43,6 @@
  * @property {string} region
  * @property {string[]} badges
  * @property {PlayerStats} stats
- * @property {string} avatar
  * @property {string} cover
  * @property {GalleryItem[]} gallery
  */
@@ -52,11 +51,11 @@
  * @typedef {Object} PlayerSummary
  * @property {string} id
  * @property {string} nick
+ * @property {'boy' | 'girl'} gender
  * @property {string} initials
  * @property {string} tagline
  * @property {boolean} online
  * @property {string} region
- * @property {string} avatar
  * @property {string} cover
  * @property {string[]} badges
  * @property {number} lastSeenHoursAgo
@@ -67,6 +66,7 @@
  * @typedef {Object} PlayerListParams
  * @property {string} [query]
  * @property {'default' | 'points' | 'maps'} [sort]
+ * @property {'' | 'boy' | 'girl'} [gender]
  * @property {number} [page]
  * @property {number} [pageSize]
  * @property {AbortSignal} [signal]

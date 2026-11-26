@@ -14,9 +14,11 @@ import {
 } from '../ui/components.js';
 import { icon } from '../ui/icons.js';
 
-const SORTS = [
-  { id: 'default', label: 'Все' },
+const FILTERS = [
+  { id: 'all', label: 'Все' },
   { id: 'points', label: 'По очкам' },
+  { id: 'boy', label: 'Парень' },
+  { id: 'girl', label: 'Девушка' },
 ];
 
 /**
@@ -26,6 +28,7 @@ const SORTS = [
 export function renderHome({ root, signal, scrollY = 0 }) {
   let query = '';
   let sort = 'default';
+  let gender = '';
   let page = 1;
   let items = [];
   let total = 0;
@@ -68,21 +71,33 @@ export function renderHome({ root, signal, scrollY = 0 }) {
     clearButton,
   ]);
 
-  const chipButtons = SORTS.map((option) =>
+  const chipIsActive = (id) => {
+    if (id === 'all') return sort === 'default' && gender === '';
+    if (id === 'points') return sort === 'points';
+    return gender === id;
+  };
+
+  const chipButtons = FILTERS.map((option) =>
     el(
       'button',
       {
-        class: `chip${option.id === sort ? ' is-active' : ''}`,
+        class: `chip${chipIsActive(option.id) ? ' is-active' : ''}`,
         type: 'button',
-        attrs: { 'aria-pressed': String(option.id === sort) },
-        dataset: { sort: option.id },
+        attrs: { 'aria-pressed': String(chipIsActive(option.id)) },
+        dataset: { filter: option.id },
         on: {
           click: () => {
-            if (sort === option.id) return;
-            sort = option.id;
+            if (option.id === 'all') {
+              sort = 'default';
+              gender = '';
+            } else if (option.id === 'points') {
+              sort = sort === 'points' ? 'default' : 'points';
+            } else {
+              gender = option.id;
+            }
             telegram.haptic('light');
             for (const chip of chipButtons) {
-              const active = chip.dataset.sort === sort;
+              const active = chipIsActive(chip.dataset.filter);
               chip.classList.toggle('is-active', active);
               chip.setAttribute('aria-pressed', String(active));
             }
@@ -100,7 +115,7 @@ export function renderHome({ root, signal, scrollY = 0 }) {
         searchBox,
         el('div', {
           class: 'chips',
-          attrs: { role: 'group', 'aria-label': 'Сортировка анкет' },
+          attrs: { role: 'group', 'aria-label': 'Фильтр и сортировка анкет' },
         }, chipButtons),
       ]),
       el('div', { class: 'home__list' }, [
@@ -278,6 +293,7 @@ export function renderHome({ root, signal, scrollY = 0 }) {
       const result = await playersApi.getPlayers({
         query,
         sort,
+        gender,
         page: requestedPage,
         pageSize: config.pageSize,
         signal,

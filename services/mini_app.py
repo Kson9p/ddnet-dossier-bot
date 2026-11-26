@@ -139,13 +139,12 @@ async def serve_mini_app_after_polling(
         except (TypeError, ValueError):
             points = hours = None
         record = {
-            "id": str(row["id"]), "nick": row["nickname"], "initials": row["nickname"][:2].upper(),
+            "id": str(row["id"]), "nick": row["nickname"], "gender": row.get("gender", ""), "initials": row["nickname"][:2].upper(),
             "tagline": "", "description": row["description"], "approved": True,
             "online": False, "currentServer": "", "currentMap": "", "region": "",
             "badges": [], "stats": {"points": points, "globalRank": None, "teamRank": None,
                 "hours": hours, "mapsFinished": None, "bestRank": None, "favoriteMap": "",
                 "joinedYear": None, "lastSeenHoursAgo": None},
-            "avatar": photo["src"] if photo else placeholder,
             "cover": photo["src"] if photo else placeholder,
             "gallery": media_urls,
         }
@@ -154,19 +153,24 @@ async def serve_mini_app_after_polling(
             record.pop("gallery")
             record["stats"] = {key: record["stats"][key] for key in ("points", "globalRank", "mapsFinished", "hours")}
             record["lastSeenHoursAgo"] = None
+        else:
+            record.pop("gender", None)
         return record
 
     async def list_players(request: web.Request) -> web.Response:
         if store is None:
             return web.json_response({"items": [], "total": 0, "page": 1, "pageSize": 6, "hasMore": False})
         query = request.query.get("query", "")[:80]
+        gender = request.query.get("gender", "")
+        if gender not in {"boy", "girl"}:
+            gender = ""
         sort = request.query.get("sort", "default")
         try:
             page = max(1, min(100_000, int(request.query.get("page", "1"))))
             page_size = max(1, min(50, int(request.query.get("pageSize", "6"))))
         except ValueError:
             return web.json_response({"error": "invalid_pagination"}, status=400)
-        rows, total = await store.list_approved(query=query, sort=sort, page=page, page_size=page_size)
+        rows, total = await store.list_approved(query=query, gender=gender, sort=sort, page=page, page_size=page_size)
         items = [await public_record(row, summary=True) for row in rows]
         return web.json_response({"items": items, "total": total, "page": page, "pageSize": page_size, "hasMore": page * page_size < total}, headers={"Cache-Control": "no-store"})
 
