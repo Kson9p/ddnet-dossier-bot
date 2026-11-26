@@ -63,6 +63,24 @@ class DossierStore:
         row = await cursor.fetchone()
         return dict(row) if row else None
 
+    async def list_approved(self, *, query: str = "", sort: str = "default", page: int = 1, page_size: int = 6) -> tuple[list[dict], int]:
+        cursor = await self._db().execute(
+            "SELECT * FROM dossiers WHERE status='approved' ORDER BY created_at DESC, id DESC"
+        )
+        rows = [dict(row) for row in await cursor.fetchall()]
+        needle = query.strip().casefold()
+        if needle:
+            rows = [row for row in rows if needle in row["nickname"].casefold()]
+        if sort == "points":
+            import re
+            def points(row: dict) -> int:
+                match = re.search(r"DDRaceNetwork:\s*(\d+)\s+очков", row.get("stats_text", ""), re.IGNORECASE)
+                return int(match.group(1)) if match else 0
+            rows.sort(key=points, reverse=True)
+        total = len(rows)
+        start = (page - 1) * page_size
+        return rows[start:start + page_size], total
+
     async def set_messages(self, dossier_id: int, message_ids: list[int]) -> None:
         await self._db().execute(
             "UPDATE dossiers SET admin_messages_json=? WHERE id=?",

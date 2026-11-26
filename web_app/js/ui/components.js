@@ -90,6 +90,9 @@ export function appHeader({
  * @param {import('../api/types.js').PlayerSummary} player
  */
 export function playerCard(player) {
+  const stats = [];
+  if (player.stats.points !== null) stats.push(statCell(formatNumber(player.stats.points), 'очков'));
+  if (player.stats.hours !== null) stats.push(statCell(formatNumber(player.stats.hours), 'часов'));
   return el(
     'a',
     {
@@ -108,10 +111,12 @@ export function playerCard(player) {
         }),
         el('span', { class: 'player-card__shade' }),
         el('div', { class: 'player-card__cover-top' }, [
-          el('span', { class: 'badge badge--rank' }, [
-            icon('trophy', { size: 13 }),
-            `#${formatNumber(player.stats.globalRank)}`,
-          ]),
+            player.stats.globalRank !== null
+              ? el('span', { class: 'badge badge--rank' }, [
+                  icon('trophy', { size: 13 }),
+                  `#${formatNumber(player.stats.globalRank)}`,
+                ])
+              : null,
           player.online
             ? el('span', { class: 'badge badge--online' }, 'онлайн')
             : null,
@@ -122,17 +127,16 @@ export function playerCard(player) {
           avatar(player.avatar, { className: 'player-card__avatar' }),
           el('div', { class: 'player-card__titles' }, [
             el('h2', { class: 'player-card__nick', text: player.nick }),
-            el('p', {
-              class: 'player-card__meta',
-              text: formatLastSeen(player.lastSeenHoursAgo, false),
-            }),
+            player.lastSeenHoursAgo !== null
+              ? el('p', {
+                  class: 'player-card__meta',
+                  text: formatLastSeen(player.lastSeenHoursAgo, false),
+                })
+              : null,
           ]),
           el('span', { class: 'player-card__chevron' }, icon('chevronRight', { size: 20 })),
         ]),
-        el('div', { class: 'player-card__stats' }, [
-          statCell(formatNumber(player.stats.points), 'очков'),
-          statCell(formatNumber(player.stats.hours), 'часов'),
-        ]),
+        stats.length ? el('div', { class: 'player-card__stats' }, stats) : null,
       ]),
     ],
   );

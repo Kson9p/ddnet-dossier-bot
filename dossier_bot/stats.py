@@ -119,15 +119,11 @@ class DdnetStatsProvider:
     async def fetch(self, nickname: str) -> StatsResult:
         nickname = nickname.strip()
         if not nickname:
-            return StatsResult(False, "Статистика недоступна: ник не указан.")
+            return StatsResult(False, "")
 
-        unavailable_points = "DDRaceNetwork: очки сейчас недоступны."
-        unavailable_hours = "DDNet: часы за последние 365 дней недоступны."
-        unavailable_ego = "Eternal Gores: профиль не найден или статистика недоступна."
-        points_text = unavailable_points
-        hours_text = unavailable_hours
-        ego_text = unavailable_ego
-        points_available = hours_available = ego_available = False
+        points_text: str | None = None
+        hours_text: str | None = None
+        ego_text: str | None = None
         timeout = aiohttp.ClientTimeout(total=self.request_timeout_seconds)
         async with aiohttp.ClientSession(
             timeout=timeout,
@@ -139,7 +135,6 @@ class DdnetStatsProvider:
                 if (isinstance(name, str) and name.casefold() == nickname.casefold()
                         and type(points) is int and points >= 0):
                     points_text = f"DDRaceNetwork: {points} очков рейтинга по данным DDStats."
-                    points_available = True
 
             playtime = await self._get_json(
                 session, self.playtime_url, params={"json2": nickname}
@@ -150,7 +145,6 @@ class DdnetStatsProvider:
                 if (isinstance(name, str) and name.casefold() == nickname.casefold()
                         and type(hours) in (int, float) and hours >= 0):
                     hours_text = f"DDNet: {hours:g} ч. за последние 365 дней."
-                    hours_available = True
 
             encoded_nickname = quote(nickname, safe="")
             ego_url = self.ego_profile_url.format(nickname=encoded_nickname)
@@ -179,19 +173,15 @@ class DdnetStatsProvider:
                         if isinstance(last_map, str) and last_map.strip():
                             parts.append(f"последнее прохождение: {last_map.strip()}")
 
-                    ego_text = (
-                        "Eternal Gores: " + "; ".join(parts) + "."
-                        if parts
-                        else "Eternal Gores: профиль найден, публичная статистика пока отсутствует."
-                    )
-                    ego_available = True
+                    if parts:
+                        ego_text = "Eternal Gores: " + "; ".join(parts) + "."
 
             ego_live_text = await self._ego_live_status(session, nickname)
-            if "недоступен" not in ego_live_text:
-                ego_available = True
-            ego_text = f"{ego_text}\n{ego_live_text}"
+            if "сейчас играет:" in ego_live_text:
+                ego_text = f"{ego_text}\n{ego_live_text}" if ego_text else ego_live_text
 
+        lines = [line for line in (points_text, hours_text, ego_text) if line]
         return StatsResult(
-            points_available or hours_available or ego_available,
-            f"{points_text}\n{hours_text}\n{ego_text}",
+            bool(lines),
+            "\n".join(lines),
         )

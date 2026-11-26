@@ -91,6 +91,14 @@ export function renderPlayer({ root, params, signal, goBack }) {
     const stats = player.stats;
     const gallery = player.gallery;
     const liveLocation = player.online && (player.currentServer || player.currentMap);
+    const statTiles = [];
+    if (stats.points !== null) statTiles.push(statTile(formatNumber(stats.points), 'очков DDNet'));
+    if (stats.globalRank !== null) statTiles.push(statTile(formatRank(stats.globalRank), 'в мире'));
+    const statisticsRows = [];
+    if (stats.hours !== null) statisticsRows.push(['clock', 'Время в игре', formatHours(stats.hours)]);
+    if (stats.lastSeenHoursAgo !== null) {
+      statisticsRows.push(['globe', 'Последний вход', formatLastSeen(stats.lastSeenHoursAgo, false)]);
+    }
 
     const profile = el('div', { class: 'profile' }, [
       el('section', { class: 'profile-hero' }, [
@@ -122,11 +130,11 @@ export function renderPlayer({ root, params, signal, goBack }) {
             }),
           ]),
           el('h1', { class: 'profile-hero__nick', text: player.nick }),
-          el('p', { class: 'profile-hero__meta' }, [
-            el('span', {
-              text: formatLastSeen(stats.lastSeenHoursAgo, false),
-            }),
-          ]),
+          stats.lastSeenHoursAgo !== null
+            ? el('p', { class: 'profile-hero__meta' }, [
+                el('span', { text: formatLastSeen(stats.lastSeenHoursAgo, false) }),
+              ])
+            : null,
         ]),
       ]),
       el('div', { class: 'profile-body' }, [
@@ -137,10 +145,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
           ]),
         ]),
 
-        el('div', { class: 'stat-tiles' }, [
-          statTile(formatNumber(stats.points), 'очков DDNet'),
-          statTile(formatRank(stats.globalRank), 'в мире'),
-        ]),
+        statTiles.length ? el('div', { class: 'stat-tiles' }, statTiles) : null,
 
         gallery.length
           ? el('section', { class: 'section' }, [
@@ -158,19 +163,12 @@ export function renderPlayer({ root, params, signal, goBack }) {
             ])
           : null,
 
-        el('section', { class: 'section' }, [
+        statisticsRows.length ? el('section', { class: 'section' }, [
           sectionTitle('Статистика DDNet'),
           el(
             'dl',
             { class: 'info-card' },
-            [
-              ['clock', 'Время в игре', formatHours(stats.hours)],
-              [
-                'globe',
-                'Последний вход',
-                formatLastSeen(stats.lastSeenHoursAgo, false),
-              ],
-            ].map(([iconName, label, value]) =>
+            statisticsRows.map(([iconName, label, value]) =>
               el('div', { class: 'info-row' }, [
                 el('span', { class: 'info-row__icon' }, icon(iconName, { size: 18 })),
                 el('dt', { class: 'info-row__label', text: label }),
@@ -178,7 +176,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
               ]),
             ),
           ),
-        ]),
+        ]) : null,
 
       ]),
     ]);

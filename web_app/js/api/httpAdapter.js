@@ -33,11 +33,8 @@ function requireString(value, field) {
   return value;
 }
 
-function requireNumber(value, field) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    throw new PlayersApiError('invalid_data', `Некорректное поле «${field}»`, { status: 502 });
-  }
-  return value;
+function optionalNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 /** @returns {import('./types.js').PlayerSummary} */
@@ -59,17 +56,12 @@ function normalizeSummary(raw) {
     avatar: requireString(raw.avatar, 'avatar'),
     cover: requireString(raw.cover, 'cover'),
     badges: Array.isArray(raw.badges) ? raw.badges.filter((b) => typeof b === 'string') : [],
-    lastSeenHoursAgo:
-      typeof raw.lastSeenHoursAgo === 'number'
-        ? raw.lastSeenHoursAgo
-        : typeof raw.stats.lastSeenHoursAgo === 'number'
-          ? raw.stats.lastSeenHoursAgo
-          : 0,
+    lastSeenHoursAgo: optionalNumber(raw.lastSeenHoursAgo ?? raw.stats.lastSeenHoursAgo),
     stats: {
-      points: requireNumber(raw.stats.points, 'stats.points'),
-      globalRank: requireNumber(raw.stats.globalRank, 'stats.globalRank'),
-      mapsFinished: requireNumber(raw.stats.mapsFinished, 'stats.mapsFinished'),
-      hours: requireNumber(raw.stats.hours, 'stats.hours'),
+      points: optionalNumber(raw.stats.points),
+      globalRank: optionalNumber(raw.stats.globalRank),
+      mapsFinished: optionalNumber(raw.stats.mapsFinished),
+      hours: optionalNumber(raw.stats.hours),
     },
   };
 }
@@ -107,15 +99,15 @@ function normalizeDetail(raw) {
     region: typeof raw.region === 'string' ? raw.region : '',
     badges: Array.isArray(raw.badges) ? raw.badges.filter((b) => typeof b === 'string') : [],
     stats: {
-      points: requireNumber(raw.stats.points, 'stats.points'),
-      globalRank: requireNumber(raw.stats.globalRank, 'stats.globalRank'),
-      teamRank: requireNumber(raw.stats.teamRank, 'stats.teamRank'),
-      hours: requireNumber(raw.stats.hours, 'stats.hours'),
-      mapsFinished: requireNumber(raw.stats.mapsFinished, 'stats.mapsFinished'),
-      bestRank: requireNumber(raw.stats.bestRank, 'stats.bestRank'),
+      points: optionalNumber(raw.stats.points),
+      globalRank: optionalNumber(raw.stats.globalRank),
+      teamRank: optionalNumber(raw.stats.teamRank),
+      hours: optionalNumber(raw.stats.hours),
+      mapsFinished: optionalNumber(raw.stats.mapsFinished),
+      bestRank: optionalNumber(raw.stats.bestRank),
       favoriteMap: typeof raw.stats.favoriteMap === 'string' ? raw.stats.favoriteMap : '—',
-      joinedYear: requireNumber(raw.stats.joinedYear, 'stats.joinedYear'),
-      lastSeenHoursAgo: requireNumber(raw.stats.lastSeenHoursAgo, 'stats.lastSeenHoursAgo'),
+      joinedYear: optionalNumber(raw.stats.joinedYear),
+      lastSeenHoursAgo: optionalNumber(raw.stats.lastSeenHoursAgo),
     },
     avatar: requireString(raw.avatar, 'avatar'),
     cover: requireString(raw.cover, 'cover'),

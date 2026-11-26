@@ -87,7 +87,7 @@ def gender_keyboard() -> InlineKeyboardMarkup:
 
 def media_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [button("Пропустить фото/видео", "d:skip")],
+        [button("Готово", "d:done")],
         [button("Назад", "d:back"), button("Отмена", "d:cancel")],
     ])
 
@@ -136,14 +136,17 @@ def dossier_text(data: dict, *, status: str = "На модерации") -> str:
         except (TypeError, json.JSONDecodeError):
             media = []
     media_count = len(media) if isinstance(media, list) else 0
-    return (
+    text = (
         f"🗂 <b>ДОСЬЕ #{data.get('id', 'черновик')}</b> · {status}\n\n"
         f"Категория: {category}\n"
         f"Ник DDNet: <code>{html.escape(str(data.get('nickname', '')))}</code>\n\n"
         f"Медиа: {media_count} фото/видео\n\n"
-        f"{html.escape(str(data.get('description', '')))}\n\n"
-        f"📊 {html.escape(str(data.get('stats_text', 'Статистика недоступна.')))}"
+        f"{html.escape(str(data.get('description', '')))}"
     )
+    stats_text = str(data.get("stats_text", "")).strip()
+    if stats_text:
+        text += f"\n\n📊 {html.escape(stats_text)}"
+    return text
 
 
 async def delete_admin_copies(bot: Bot, owner_id: int, encoded_ids: str) -> bool:
@@ -212,7 +215,7 @@ def build_admin_router(bot: Bot, settings: Settings, store: DossierStore) -> Rou
 
         status = "approved" if action == "approve" else "rejected"
         await store.set_status(dossier_id, status)
-        visible_status = "Одобрено · приватно" if status == "approved" else "Отклонено"
+        visible_status = "Опубликовано на сайте" if status == "approved" else "Отклонено"
         await callback.answer("Одобрено" if status == "approved" else "Отклонено")
         if callback.message:
             try:
@@ -223,7 +226,7 @@ def build_admin_router(bot: Bot, settings: Settings, store: DossierStore) -> Rou
             except TelegramAPIError:
                 pass
         notice = (
-            "✅ Досье прошло модерацию и остаётся приватным."
+            "✅ Досье одобрено и теперь опубликовано в каталоге сайта."
             if status == "approved"
             else "Досье отклонено модератором. Ты можешь удалить его кнопкой в сообщении о подаче."
         )
@@ -274,7 +277,7 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         await send(
             message,
             dossier_text(draft, status="Черновик")
-            + "\n\nПодтверди, что информация и медиа относятся к тебе и ты согласен(на) передать их на проверку. До отдельного решения модератора досье не публикуется.",
+            + "\n\nПодтверди, что анкета и медиа относятся к тебе. Если модератор одобрит заявку, ник, описание, статистика и медиа станут доступны всем посетителям сайта.",
             confirm_keyboard(),
         )
 
@@ -331,9 +334,7 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
             await send(message, "Введи ник текстом, до 32 символов, или используй /cancel."); return
         await state.update_data(nickname=nickname)
         await state.update_data(
-            stats_text="DDraceNetwork: запрос статистики пропущен.\n"
-            "DDNet: часы за последние 365 дней не запрошены.\n"
-            "Eternal Gores: запрос статистики пропущен."
+            stats_text=""
         )
         await state.set_state(UserFlow.stats_consent)
         await send(
@@ -352,9 +353,7 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
                 result = await stats_provider.fetch(draft.get("nickname", ""))
                 await state.update_data(stats_text=result.text)
             else:
-                await state.update_data(stats_text="DDraceNetwork: слишком частые запросы, статистика недоступна.\n"
-                    "DDNet: часы за последние 365 дней не запрошены.\n"
-                    "Eternal Gores: запрос статистики не выполнен.")
+                await state.update_data(stats_text="")
         await state.set_state(UserFlow.description)
         await callback.answer("Запрошено" if callback.data == "stats:fetch" else "Пропущено")
         if callback.message:
@@ -374,16 +373,14 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         await state.set_state(UserFlow.media)
         if video_allowed:
             media_instructions = (
-                "Пришли до 3 фото ИЛИ не больше 1 фото и 1 видео. "
-                "Для этой анкеты видео доступно (случайный шанс 50%). Если хочешь добавить видео, загрузи максимум одно фото. "
+                "Пришли минимум 1 фото: до 3 фото либо 1 фото и 1 видео. "
+                "Для этого досье можно добавить видео. "
             )
         else:
-            media_instructions = (
-                "Пришли до 3 фото. Видео для этой анкеты не выпало (шанс 50%). "
-            )
+            media_instructions = "Пришли от 1 до 3 фото. "
         await send(
             message,
-            media_instructions + "Медиа увидит только модератор. Можно пропустить шаг.",
+            media_instructions.rstrip(),
             media_keyboard(),
         )
 
@@ -417,19 +414,25 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         video_count = sum(item.get("type") == "video" for item in media if isinstance(item, dict))
         await send(
             message,
-            f"Добавлено: {photo_count} фото и {video_count} видео. Можно добавить ещё в пределах лимита или перейти дальше.",
+            f"Добавлено: {photo_count} фото и {video_count} видео. Для продолжения нужно минимум одно фото.",
             media_keyboard(),
         )
 
     @router.message(UserFlow.media)
     async def unsupported_media(message: Message) -> None:
-        await send(message, "Подойдут только фото или видео в пределах показанного лимита. Можно пропустить этот шаг.", media_keyboard())
+        await send(message, "Подойдут фото или видео в пределах лимита. Для анкеты обязательно нужно минимум одно фото.", media_keyboard())
 
-    @router.callback_query(F.data == "d:skip")
-    async def skip_media(callback: CallbackQuery, state: FSMContext) -> None:
+    @router.callback_query(F.data.in_({"d:done", "d:skip"}))
+    async def finish_media(callback: CallbackQuery, state: FSMContext) -> None:
         if await state.get_state() != UserFlow.media.state:
             await callback.answer("Этот шаг уже завершён", show_alert=True); return
-        await callback.answer()
+        draft = await state.get_data()
+        media = draft.get("media", [])
+        if not isinstance(media, list) or not any(
+            isinstance(item, dict) and item.get("type") == "photo" for item in media
+        ):
+            await callback.answer("Добавь минимум одно фото, чтобы продолжить.", show_alert=True); return
+        await callback.answer("Готово")
         if callback.message:
             await show_preview(callback.message, state)
 
@@ -446,6 +449,11 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
             or not 1 <= len(draft["description"]) <= 600
         ):
             await callback.answer("В черновике не хватает данных. Начни заново.", show_alert=True); return
+        media = draft.get("media", [])
+        if not isinstance(media, list) or not any(
+            isinstance(item, dict) and item.get("type") == "photo" for item in media
+        ):
+            await callback.answer("Добавь минимум одно фото перед отправкой.", show_alert=True); return
         if not dossier_throttle.allow(callback.from_user.id):
             await callback.answer("Подожди немного перед следующей заявкой.", show_alert=True); return
         dossier_id = await store.add(callback.from_user.id, draft)
@@ -485,7 +493,7 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         if callback.message:
             if delivered:
                 await callback.message.answer(
-                    "✅ Досье передано модератору. Оно остаётся приватным, пока не принято отдельное решение о публикации.",
+                    "✅ Досье передано модератору. После одобрения оно появится в публичном каталоге сайта.",
                     reply_markup=withdraw_keyboard(dossier_id),
                 )
             else:
@@ -631,7 +639,7 @@ async def run(
         ))
         if serve_web:
             website_task = asyncio.create_task(
-                serve_mini_app_after_polling(delay_seconds=10),
+                serve_mini_app_after_polling(delay_seconds=10, store=store, bot=bot),
                 name="mini_app_web",
             )
         try:

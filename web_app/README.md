@@ -1,260 +1,28 @@
-# Анкеты DDNet — Telegram Mini App
+# DDNet dossier Mini App
 
-Мобильный каталог анкет игроков DDNet в тёмном интерфейсе, стилизованном под
-Telegram. Сделан как статическое приложение без сборки и зависимостей: чистые
-ES-модули, CSS и локальные SVG-иллюстрации.
+The Mini App is served by the dossier bot from the same process and reads the
+same SQLite database. It lists only dossiers whose moderation status is
+`approved`.
 
-> Сейчас в каталоге показаны примеры профилей. Реальная база игроков пока не
-> подключена; личных фотографий, Telegram-токенов и идентификаторов в проекте нет.
+## How publishing works
 
-## Что умеет
+1. A user submits a dossier to the bot.
+2. The dossier is stored in `DOSSIER_DATABASE_PATH` and sent to the owner for
+   review.
+3. Choosing **Одобрить** changes its status to `approved`.
+4. The website API then includes it in `/api/players`; its details are available
+   at `/api/players/{id}`.
 
-- **Главная**: карточки с обложкой, аватаром, ником и коротким описанием,
-  поиск по нику с задержкой ввода, сортировка по очкам и картам, подгрузка
-  следующих анкет.
-- **Анкета игрока**: обложка, ник, описание, теги, ключевая статистика DDNet,
-  таблица сведений, галерея фото/видео, лайтбокс с листанием, кнопки
-  «Поделиться» и «Скопировать ник».
-- **Только одобренные анкеты**: фильтр работает в API-адаптере, а не в
-  интерфейсе. Две неодобренные тестовые анкеты специально лежат в данных, чтобы
-  можно было проверить, что они не появляются в списке и не открываются по
-  прямой ссылке.
-- **Telegram-интеграция**: клиентский SDK Mini Apps, BackButton, гарптика,
-  цвета шапки и учёт safe area. Если приложение открыто в обычном браузере,
-  все методы безопасно отключаются.
-- **Состояния**: скелетоны загрузки, пустой поиск, ошибки сети, 404 и экран
-  «Анкета недоступна».
-- **Доступность**: семантическая разметка, подписи кнопок, focus trap в
-  модальных окнах, поддержка `prefers-reduced-motion`, контрастная тёмная тема.
+The browser never receives the Telegram bot token or Telegram user ID. Approved
+photos and videos are proxied by the server at `/api/players/{id}/media/{index}`.
+Rejecting or deleting a dossier removes it from public API results immediately.
 
-## Запуск
+## Hosting
 
-ES-модули не работают через `file://`, поэтому нужен любой статический сервер.
-На Windows проще всего:
+Run `dossier_bot/main.py` as the host startup file. Keep the configured
+`DOSSIER_DATABASE_PATH` persistent between restarts. The bot starts the web app
+on `SERVER_PORT` (or `PORT`) ten seconds after Telegram polling starts. The
+front end uses the same-origin API at `/api` and needs no separate web server.
 
-```bat
-serve.bat
-```
-
-Он поднимет сервер на `http://127.0.0.1:5173/` и откроет браузер. Вручную:
-
-```bash
-python -m http.server 5173 --bind 127.0.0.1
-```
-
-Затем откройте `http://127.0.0.1:5173/`.
-
-Для проверки мобильной вёрстки в инструментах разработчика включите режим
-устройства (например, 390 × 844). В `tools/preview.html` есть готовая
-«телефонная» рамка с iframe для быстрого просмотра.
-
-## Структура
-
-```text
-index.html                     оболочка приложения
-css/
-  base.css                     токены, сброс, каркас, safe area
-  components.css               шапка, поиск, карточки, шторка, лайтбокс
-  views.css                    главная, анкета, скелетоны, состояния
-js/
-  main.js                      точка входа и маршруты
-  router.js                    хеш-роутер и восстановление прокрутки
-  config.js                    режим API, адрес, размер страницы
-  telegram.js                  клиентский SDK Mini Apps (без Bot API)
-  api/
-    playersApi.js              единая точка доступа для интерфейса
-    sampleAdapter.js           локальный адаптер: поиск, сортировка, пагинация
-    httpAdapter.js             адаптер для будущего сервера
-    errors.js                  коды и тексты ошибок
-    types.js                   JSDoc-типы контракта
-  data/samplePlayers.js        10 одобренных + 2 неодобренные тестовые анкеты
-  ui/                          компоненты, иконки, лайтбокс, шторка, тосты
-  utils/                       DOM-хелперы и форматирование
-  views/                       главная, анкета, 404
-assets/
-  placeholder/                 сгенерированные SVG-обложки, аватары, галерея
-tools/
-  generate_placeholders.py     повторная генерация заглушек
-  preview.html                 мобильный предпросмотр в рамке
-serve.bat                      локальный сервер
-```
-
-## Примеры данных и приватность
-
-- Ники, описания и статистика придуманы. Совпадения с реальными игроками
-  случайны.
-- Все изображения — абстрактные SVG-иллюстрации, сгенерированные локально.
-  Реальных фотографий и видео в проекте нет.
-- В коде нет Telegram-токенов, `chat_id`, `user_id` и других идентификаторов.
-  `initData` не читается.
-- Браузер не обращается к Telegram Bot API. Подключён только клиентский
-  `telegram-web-app.js` для BackButton, темы и гарптики; без него приложение
-  полностью работоспособно.
-- Реальная база данных ещё не подключена: `js/data/samplePlayers.js` содержит
-  примеры профилей.
-
-Чтобы перегенерировать иллюстрации:
-
-```bash
-python tools/generate_placeholders.py
-```
-
-## API-адаптер
-
-Интерфейс знает только два метода:
-
-```js
-playersApi.getPlayers({ query, sort, page, pageSize, signal });
-playersApi.getPlayer(id, { signal });
-```
-
-Реализация выбирается в `js/config.js`:
-
-```js
-export const config = {
-  apiMode: 'local', // 'local' | 'http'
-  apiBaseUrl: '/api',
-  pageSize: 6,
-  // ...
-};
-```
-
-- `local` — примеры профилей, имитация задержки сети, поиск и пагинация.
-- `http` — запросы к вашему серверу по контракту ниже. Интерфейс, компоненты и
-  маршруты при этом не меняются.
-
-### Контракт сервера
-
-`GET /api/players?query=&sort=default|points|maps&page=1&pageSize=6`
-
-```json
-{
-  "items": [
-    {
-      "id": "nova",
-      "nick": "Nova",
-      "initials": "NV",
-      "tagline": "Спринтер и охотник за рекордами",
-      "online": true,
-      "region": "EU",
-      "avatar": "/media/avatars/nova.webp",
-      "cover": "/media/covers/nova.webp",
-      "badges": ["Racing", "Solo"],
-      "lastSeenHoursAgo": 3,
-      "stats": {
-        "points": 1284,
-        "globalRank": 312,
-        "mapsFinished": 892,
-        "hours": 1460
-      }
-    }
-  ],
-  "total": 10,
-  "page": 1,
-  "pageSize": 6,
-  "hasMore": true
-}
-```
-
-Для полной анкеты сервер может дополнительно передать `currentServer` и `currentMap`. Если `online: true`, интерфейс покажет их в правом верхнем углу обложки. Backend может получать живой список с DDNet master endpoint `https://master1.ddnet.org/ddnet/15/servers.json`; обновляйте состояние периодически и сопоставляйте ник с активным списком игроков. Ник в DDNet не является уникальным идентификатором, поэтому совпадение по имени не доказывает, что это именно тот человек.
-
-`GET /api/players/:id`
-
-```json
-{
-  "id": "nova",
-  "nick": "Nova",
-  "initials": "NV",
-  "tagline": "Спринтер и охотник за рекордами",
-  "description": "Текст анкеты...",
-  "approved": true,
-  "online": true,
-  "currentServer": "DDNet GER - Moderate",
-  "currentMap": "The Bunker",
-  "region": "EU",
-  "badges": ["Racing"],
-  "stats": {
-    "points": 1284,
-    "globalRank": 312,
-    "teamRank": 58,
-    "hours": 1460,
-    "mapsFinished": 892,
-    "bestRank": 4,
-    "favoriteMap": "Just Every Fly",
-    "joinedYear": 2021,
-    "lastSeenHoursAgo": 3
-  },
-  "avatar": "/media/avatars/nova.webp",
-  "cover": "/media/covers/nova.webp",
-  "gallery": [
-    { "type": "image", "src": "/media/gallery/nova-1.webp", "caption": "Скриншот" },
-    {
-      "type": "video",
-      "poster": "/media/gallery/nova-video.webp",
-      "caption": "Фрагмент забега",
-      "duration": "0:42"
-    }
-  ]
-}
-```
-
-Коды ответов:
-
-- `404` — анкета не найдена;
-- `403` — анкета не одобрена или нет доступа;
-- остальные `4xx/5xx` показываются как ошибка сервера.
-
-### Что важно на сервере
-
-1. **Одобрение проверяется на сервере.** Клиент дополнительно отбрасывает
-   `approved !== true`, но это только защита от ошибок, а не контроль доступа.
-2. **Медиа отдаёт сервер** по безопасным ссылкам (подписанные URL или прокси).
-   Нельзя встраивать токены бота в HTML/JS и нельзя ходить из браузера в
-   `api.telegram.org`.
-3. **Никаких секретов во фронтенде.** Токены, `chat_id` и доступ к модерации
-   остаются на сервере.
-4. **Валидация и нормализация** уже есть в `httpAdapter.js`: он проверяет
-   обязательные поля и приводит ответ к внутреннему формату.
-5. Для продакшена включите HTTPS, ограничьте CORS и добавьте авторизацию для
-   админских/модерационных эндпоинтов.
-
-### Как перейти на реальную базу
-
-1. Реализуйте два эндпоинта выше на своём сервере.
-2. Поставьте `apiMode: 'http'` и нужный `apiBaseUrl` в `js/config.js`.
-3. Убедитесь, что сервер возвращает только одобренные анкеты и безопасные URL
-   медиа.
-4. При необходимости расширьте `normalizeSummary`/`normalizeDetail` в
-   `httpAdapter.js` под свою схему.
-5. Интерфейс менять не нужно: он работает через `playersApi`.
-
-## Telegram Mini App
-
-- Клиентский SDK подключён в `index.html` с `defer`. Если CDN недоступен,
-  приложение продолжает работать как обычный сайт.
-- `js/telegram.js` вызывает `ready()`, `expand()`, настраивает цвета, BackButton,
-  гарптику и высоту viewport только внутри Telegram (`platform !== 'unknown'`)
-  и с проверкой версии API.
-- Приложение не использует Bot API и не требует токенов. Для публикации
-  разместите статику на HTTPS и укажите URL в настройках Web App у бота.
-- Учтены `safe-area-inset-*` и `--tg-safe-area-inset-*`; на десктопе интерфейс
-  ограничен колонкой 520 px.
-
-## Ограничения текущей версии
-
-- Видео показано иллюстративным постером; воспроизведение появится после
-  подключения настоящих медиа.
-- Локальный адаптер добавляет искусственную задержку 140–320 мс, чтобы были видны
-  скелетоны.
-- Маршрутизация хешовая (`#/player/nova`), поэтому статический хостинг не
-  требует настройки fallback на `index.html`.
-- Поиск и сортировка не сохраняются в URL и сбрасываются при возврате на
-  главную.
-
-## Проверки
-
-В ходе разработки проверены: загрузка списка, поиск (включая пустой результат),
-сортировки, пагинация, переход в анкету и назад с восстановлением прокрутки,
-лайтбокс и клавиатура, нижняя шторка, копирование/поделиться, прямые ссылки на
-неодобренные анкеты, 404, мобильная вёрстка 320/390 px и отсутствие ошибок в
-консоли. Lighthouse: Accessibility 100, Best Practices 100, SEO 100.
+The site contains no sample player cards. If there are no approved dossiers,
+the catalog displays its empty state.
