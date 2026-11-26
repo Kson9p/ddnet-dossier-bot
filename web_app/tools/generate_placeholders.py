@@ -1,4 +1,4 @@
-"""Генератор демонстрационных SVG-заглушек для каталога анкет DDNet.
+"""Генератор SVG-иллюстраций для каталога анкет DDNet.
 
 Скрипт создаёт абстрактные обложки, аватары и изображения галереи.
 Никаких реальных фотографий, ников или логотипов не используется.
@@ -56,15 +56,6 @@ def defs(c1: str, c2: str, grid: int = 64) -> str:
     <path d="M{grid} 0H0V{grid}" stroke="#fff" stroke-opacity=".055" stroke-width="1"/>
   </pattern>
 </defs>"""
-
-
-def demo_badge(x: int, y: int, label: str = "ДЕМО") -> str:
-    w = 34 + len(label) * 13
-    return f"""<g transform="translate({x} {y})">
-  <rect width="{w}" height="36" rx="10" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".22"/>
-  <text x="{w / 2}" y="24" text-anchor="middle" font-family="{FONT}" font-size="16"
-        font-weight="700" letter-spacing="3" fill="#fff" fill-opacity=".85">{label}</text>
-</g>"""
 
 
 def route(rnd: random.Random, w: int, h: int, color: str = "#fff") -> str:
@@ -125,11 +116,6 @@ def cover(pid: str, initials: str, c1: str, c2: str) -> str:
         f'<text x="1148" y="620" text-anchor="end" font-family="{FONT}" font-size="300" '
         f'font-weight="800" fill="#fff" fill-opacity=".15">{initials}</text>'
     )
-    art.append(
-        f'<text x="1150" y="650" text-anchor="end" font-family="{FONT}" font-size="17" '
-        f'letter-spacing="5" fill="#fff" fill-opacity=".45">DDNET · ПЛЕЙСХОЛДЕР</text>'
-    )
-    art.append(demo_badge(44, 603))
     art.append("</svg>")
     return "".join(art)
 
@@ -191,18 +177,6 @@ def gallery_shot(pid: str, idx: int, c1: str, c2: str) -> str:
         )
     art.append(route(rnd, w, h))
     art.append(tee(rnd.randint(220, w - 360), rnd.randint(160, h - 320), rnd.randint(80, 120), c2))
-    # HUD
-    art.append(
-        f'<text x="56" y="86" font-family="{FONT}" font-size="20" letter-spacing="4" '
-        f'fill="#fff" fill-opacity=".65">MAP PREVIEW · ДЕМО</text>'
-    )
-    art.append(
-        f'<rect x="56" y="112" width="180" height="4" rx="2" fill="#fff" fill-opacity=".25"/>'
-    )
-    art.append(
-        f'<text x="1144" y="844" text-anchor="end" font-family="{FONT}" font-size="18" '
-        f'letter-spacing="3" fill="#fff" fill-opacity=".4">ДЕМО-ИЗОБРАЖЕНИЕ</text>'
-    )
     art.append("</svg>")
     return "".join(art)
 
@@ -228,14 +202,6 @@ def gallery_rings(pid: str, c1: str, c2: str) -> str:
         '<path d="M-80 760 L420 180" stroke="#fff" stroke-opacity=".12" stroke-width="120"/>'
     )
     art.append(tee(250, 300, 150, c2))
-    art.append(
-        f'<text x="60" y="810" font-family="{FONT}" font-size="22" letter-spacing="4" '
-        f'fill="#fff" fill-opacity=".6">АТМОСФЕРА · ДЕМО</text>'
-    )
-    art.append(
-        f'<text x="1144" y="844" text-anchor="end" font-family="{FONT}" font-size="18" '
-        f'letter-spacing="3" fill="#fff" fill-opacity=".4">ПЛЕЙСХОЛДЕР</text>'
-    )
     art.append("</svg>")
     return "".join(art)
 
@@ -252,10 +218,6 @@ def gallery_video(pid: str, c1: str, c2: str) -> str:
         '<rect width="1200" height="900" fill="url(#glow)"/>',
         '<rect width="1200" height="900" fill="#07111b" fill-opacity=".42"/>',
         route(rnd, w, h),
-        f'<text x="600" y="540" text-anchor="middle" font-family="{FONT}" font-size="20" '
-        f'letter-spacing="6" fill="#fff" fill-opacity=".65">ДЕМО-ВИДЕО</text>',
-        f'<text x="1144" y="844" text-anchor="end" font-family="{FONT}" font-size="18" '
-        f'letter-spacing="3" fill="#fff" fill-opacity=".4">ВИДЕО-ЗАГЛУШКА</text>',
         "</svg>",
     ]
     return "".join(art)

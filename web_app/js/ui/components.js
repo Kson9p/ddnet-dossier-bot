@@ -204,17 +204,3 @@ export function stateView({ iconName, title, text, actions = [], tone = 'default
     actions.length ? el('div', { class: 'state__actions' }, actions) : null,
   ]);
 }
-
-/** Нижняя плашка о демонстрационных данных. */
-export function demoNotice() {
-  return el('aside', { class: 'demo-notice' }, [
-    el('span', { class: 'demo-notice__icon' }, icon('shield', { size: 18 })),
-    el('div', {}, [
-      el('p', { class: 'demo-notice__title', text: 'Демонстрационные данные' }),
-      el('p', {
-        class: 'demo-notice__text',
-        text: 'Ники, статистика и медиа вымышлены. Показываются только одобренные анкеты.',
-      }),
-    ]),
-  ]);
-}

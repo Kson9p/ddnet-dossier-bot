@@ -10,8 +10,8 @@ let activeClose = null;
 const FACTS = [
   {
     iconName: 'user',
-    title: 'Вымышленные анкеты',
-    text: 'Все ники, описания и статистика придуманы для демонстрации. Реальных игроков и личных фотографий здесь нет.',
+    title: 'Примеры анкет',
+    text: 'Ники, описания и статистика сейчас тестовые. Настоящие анкеты появятся после подключения базы.',
   },
   {
     iconName: 'check',
@@ -20,8 +20,8 @@ const FACTS = [
   },
   {
     iconName: 'image',
-    title: 'Медиа — заглушки',
-    text: 'Фото и видео заменены локальными SVG. Настоящие медиа будут приходить с сервера по безопасным ссылкам.',
+    title: 'Изображения',
+    text: 'Сейчас используются графические иллюстрации. Фото и видео будут загружаться из анкет после подключения сервера.',
   },
   {
     iconName: 'lock',
@@ -35,7 +35,7 @@ const FACTS = [
   },
 ];
 
-/** Открывает нижнюю шторку с информацией о демо-версии. */
+/** Открывает нижнюю шторку с информацией о приложении. */
 export function openAboutSheet() {
   if (activeClose) return;
 
@@ -88,19 +88,19 @@ export function openAboutSheet() {
       el('div', { class: 'sheet__head' }, [
         el('div', {}, [
           el('p', { class: 'sheet__eyebrow', text: 'DDNet · анкеты' }),
-          el('h2', { class: 'sheet__title', id: 'about-title', text: 'О демо-версии' }),
+          el('h2', { class: 'sheet__title', id: 'about-title', text: 'О приложении' }),
         ]),
         closeButton,
       ]),
       el('div', { class: 'sheet__body' }, [
         el('p', {
           class: 'sheet__lead',
-          text: 'Это демонстрационный каталог анкет игроков DDNet в формате Telegram Mini App. Интерфейс уже работает с данными через отдельный API-адаптер.',
+          text: 'Каталог игроков DDNet в формате Telegram Mini App. Сейчас в нём показаны примеры анкет; реальная база игроков ещё не подключена.',
         }),
         el('div', { class: 'fact-strip' }, [
-          el('span', { class: 'fact-pill' }, [el('b', { text: '10' }), ' анкет']),
+          el('span', { class: 'fact-pill' }, [el('b', { text: '10' }), ' примеров']),
           el('span', { class: 'fact-pill' }, [el('b', { text: '3' }), ' медиа']),
-          el('span', { class: 'fact-pill' }, [el('b', { text: '0' }), ' реальных данных']),
+          el('span', { class: 'fact-pill' }, [el('b', { text: '0' }), ' реальных анкет']),
         ]),
         el(
           'ul',
@@ -117,7 +117,7 @@ export function openAboutSheet() {
         ),
       ]),
       el('div', { class: 'sheet__footer' }, [
-        el('span', { class: 'sheet__version', text: 'Версия 0.1 · демо' }),
+        el('span', { class: 'sheet__version', text: 'Версия 0.1' }),
         button({ label: 'Понятно', variant: 'primary', onClick: close }),
       ]),
     ],

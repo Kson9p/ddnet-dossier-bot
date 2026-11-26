@@ -2,17 +2,17 @@
  * Настройки приложения.
  *
  * apiMode:
- *   'demo' — локальные демонстрационные данные (по умолчанию);
+ *   'local' — локальные примеры анкет (по умолчанию);
  *   'http' — запросы к собственному серверу по контракту из README.
  *
  * Чтобы подключить реальную базу, достаточно переключить apiMode на 'http'
  * и указать адрес API. Интерфейс и формат данных останутся прежними.
  */
 export const config = Object.freeze({
-  apiMode: 'demo',
+  apiMode: 'local',
   apiBaseUrl: '/api',
   pageSize: 6,
-  demoLatency: {
+  localLatency: {
     min: 140,
     max: 320,
   },

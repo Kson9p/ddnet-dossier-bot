@@ -1,9 +1,9 @@
-import { DEMO_PLAYERS } from '../data/demoPlayers.js';
+import { SAMPLE_PLAYERS } from '../data/samplePlayers.js';
 import { config } from '../config.js';
 import { PlayersApiError } from './errors.js';
 
 /**
- * Демонстрационный адаптер.
+ * Локальный адаптер примеров.
  * Имитирует сетевые запросы, поиск, сортировку и пагинацию.
  * Наружу отдаёт только анкеты с approved === true.
  */
@@ -31,7 +31,7 @@ function wait(ms, signal) {
 }
 
 function simulateLatency(signal) {
-  const { min, max } = config.demoLatency;
+  const { min, max } = config.localLatency;
   const ms = Math.round(min + Math.random() * Math.max(0, max - min));
   return wait(ms, signal);
 }
@@ -97,7 +97,7 @@ async function getPlayers(params = {}) {
   await simulateLatency(signal);
 
   const needle = String(query).trim().toLocaleLowerCase('ru');
-  let items = DEMO_PLAYERS.filter(isPublic);
+  let items = SAMPLE_PLAYERS.filter(isPublic);
 
   if (needle) {
     items = items.filter((record) => record.nick.toLocaleLowerCase('ru').includes(needle));
@@ -133,7 +133,7 @@ async function getPlayers(params = {}) {
 async function getPlayer(id, options = {}) {
   await simulateLatency(options.signal);
 
-  const record = DEMO_PLAYERS.find((item) => item.id === id);
+  const record = SAMPLE_PLAYERS.find((item) => item.id === id);
 
   if (!record) {
     throw new PlayersApiError('not_found', 'Анкета не найдена', { status: 404 });
@@ -146,6 +146,6 @@ async function getPlayer(id, options = {}) {
   return toDetail(record);
 }
 
-export function createDemoPlayersApi() {
+export function createSamplePlayersApi() {
   return { getPlayers, getPlayer };
 }

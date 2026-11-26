@@ -439,21 +439,6 @@
   box-shadow: 0 0 8px rgba(76, 208, 125, 0.85);
 }
 
-.badge--demo {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 7px;
-  background: rgba(8, 15, 23, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 9.5px;
-  letter-spacing: 1px;
-  font-weight: 600;
-}
-
 /* ---------- Кнопки ---------- */
 
 .btn {
@@ -576,36 +561,6 @@
   justify-content: center;
   gap: 10px;
   margin-top: 22px;
-}
-
-/* ---------- Плашка о демо ---------- */
-
-.demo-notice {
-  display: flex;
-  gap: 11px;
-  padding: 13px 14px;
-  border-radius: 14px;
-  background: rgba(97, 173, 240, 0.07);
-  border: 1px solid rgba(97, 173, 240, 0.14);
-}
-
-.demo-notice__icon {
-  display: flex;
-  padding-top: 1px;
-  color: var(--accent);
-  flex: 0 0 auto;
-}
-
-.demo-notice__title {
-  margin-bottom: 3px;
-  font-size: 12.5px;
-  font-weight: 600;
-}
-
-.demo-notice__text {
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--text-2);
 }
 
 /* ---------- Скелетоны ---------- */

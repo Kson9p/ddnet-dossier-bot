@@ -31,6 +31,7 @@ from dossier_bot.config import ConfigError, Settings, load_settings
 from dossier_bot.states import AdminFlow, UserFlow
 from dossier_bot.stats import DdnetStatsProvider
 from dossier_bot.store import DossierStore
+from services.mini_app import serve_mini_app_after_polling
 
 log = logging.getLogger(__name__)
 
@@ -583,7 +584,12 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
     return router
 
 
-async def run(settings: Settings, *, handle_signals: bool = True) -> None:
+async def run(
+    settings: Settings,
+    *,
+    handle_signals: bool = True,
+    serve_web: bool = True,
+) -> None:
     store = DossierStore(settings.database_path)
     bot = Bot(
         settings.token,
@@ -594,6 +600,7 @@ async def run(settings: Settings, *, handle_signals: bool = True) -> None:
     dispatcher = Dispatcher(storage=MemoryStorage())
     dispatcher.include_router(build_admin_router(bot, settings, store))
     dispatcher.include_router(build_user_router(bot, settings, store))
+    website_task: asyncio.Task[None] | None = None
 
     async def safe_error_handler(event: ErrorEvent) -> bool:
         log.error("Update handler failed (%s)", type(event.exception).__name__)
@@ -622,9 +629,18 @@ async def run(settings: Settings, *, handle_signals: bool = True) -> None:
             close_bot_session=False,
             handle_signals=handle_signals, handle_as_tasks=False,
         ))
+        if serve_web:
+            website_task = asyncio.create_task(
+                serve_mini_app_after_polling(delay_seconds=10),
+                name="mini_app_web",
+            )
         try:
             await asyncio.shield(polling)
         finally:
+            if website_task is not None:
+                website_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await website_task
             if not polling.done():
                 # Allow start_polling to install its stop event before shutdown.
                 await asyncio.sleep(0)

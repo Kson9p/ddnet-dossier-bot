@@ -1,5 +1,5 @@
 import { config } from '../config.js';
-import { createDemoPlayersApi } from './demoAdapter.js';
+import { createSamplePlayersApi } from './sampleAdapter.js';
 import { createHttpPlayersApi } from './httpAdapter.js';
 
 /**
@@ -9,16 +9,16 @@ import { createHttpPlayersApi } from './httpAdapter.js';
  *   playersApi.getPlayers({ query, sort, page, pageSize, signal })
  *   playersApi.getPlayer(id, { signal })
  *
- * Реализация выбирается в js/config.js (apiMode: 'demo' | 'http').
+ * Реализация выбирается в js/config.js (apiMode: 'local' | 'http').
  * Благодаря этому замена заглушек на серверную базу не требует правок UI.
  */
 
 const factories = {
-  demo: createDemoPlayersApi,
+  local: createSamplePlayersApi,
   http: createHttpPlayersApi,
 };
 
-const factory = factories[config.apiMode] ?? factories.demo;
+const factory = factories[config.apiMode] ?? factories.local;
 const adapter = factory();
 
 export const playersApi = {

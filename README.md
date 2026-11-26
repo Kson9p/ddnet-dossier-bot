@@ -36,7 +36,7 @@ server waits 10 seconds and then serves the Mini App from the same Python
 process on the hosting panel's `SERVER_PORT` (or `PORT`). No extra bot process
 or package is needed. Make sure the host exposes that port through a public
 HTTPS address before setting it as the Telegram Mini App URL. The site currently
-uses demo player data; real voting and its weekly change limit still need a
+uses sample player data; real voting and its weekly change limit still need a
 server-side API and database implementation.
 
 ## Independent services or terminals

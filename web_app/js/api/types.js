@@ -37,7 +37,6 @@
  * @property {string} tagline
  * @property {string} description
  * @property {boolean} approved  Признак одобрения модерацией. Наружу отдаются только true.
- * @property {boolean} [demo]
  * @property {boolean} online
  * @property {string} [currentServer] Текущий сервер, если игрок онлайн.
  * @property {string} [currentMap] Текущая карта, если игрок онлайн.

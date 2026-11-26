@@ -5,11 +5,8 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-import os
 import time
-from pathlib import Path
 
-from aiohttp import web
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
@@ -37,12 +34,12 @@ from handlers.user import create_user_router
 from services.dossier_process import run_dossier_after_polling
 from services.media_groups import MediaGroupBuffer
 from services.middleware import UpdateDeduperMiddleware
+from services.mini_app import serve_mini_app_after_polling
 from services.rate_limit import NoticeThrottle, RateLimiter
 from services.relay import RelayService
 from services.telegram import safe_telegram_call
 
 logger = logging.getLogger(__name__)
-WEB_APP_DIR = Path(__file__).resolve().parent / "web_app"
 
 
 def _configure_logging(level: str = "INFO") -> None:
@@ -129,57 +126,6 @@ async def _maintenance_loop(
             return
         except TimeoutError:
             await _cleanup_database(database, settings)
-
-
-async def _serve_mini_app_after_polling(polling_ready: asyncio.Event) -> None:
-    """Serve the static Mini App 10 seconds after the bot's first poll response."""
-    await polling_ready.wait()
-    logger.info("Telegram polling готов; Mini App запустится через 10 секунд.")
-    await asyncio.sleep(10)
-
-    raw_port = os.getenv("SERVER_PORT", "").strip() or os.getenv("PORT", "").strip()
-    try:
-        port = int(raw_port)
-        if not 1 <= port <= 65_535:
-            raise ValueError
-    except ValueError:
-        logger.error("Сайт не запущен: хостинг не передал корректный SERVER_PORT.")
-        return
-
-    if not (WEB_APP_DIR / "index.html").is_file():
-        logger.error("Сайт не запущен: файл web_app/index.html не найден.")
-        return
-
-    app = web.Application()
-
-    async def index(_request: web.Request) -> web.FileResponse:
-        return web.FileResponse(WEB_APP_DIR / "index.html")
-
-    app.router.add_get("/", index)
-    app.router.add_get("/index.html", index)
-    # Only expose files the Mini App needs; project notes and local tools stay private.
-    app.router.add_static("/css/", WEB_APP_DIR / "css", show_index=False)
-    app.router.add_static("/js/", WEB_APP_DIR / "js", show_index=False)
-    app.router.add_static("/assets/", WEB_APP_DIR / "assets", show_index=False)
-
-    runner = web.AppRunner(app, access_log=None)
-    try:
-        await runner.setup()
-        site = web.TCPSite(runner, host="0.0.0.0", port=port)
-        await site.start()
-    except (OSError, ValueError) as exc:
-        logger.error(
-            "Сайт не запустился (%s); Telegram-бот продолжает работать.",
-            type(exc).__name__,
-        )
-        await runner.cleanup()
-        return
-
-    logger.info("Сайт Mini App запущен на порту %s.", port)
-    try:
-        await asyncio.Event().wait()
-    finally:
-        await runner.cleanup()
 
 
 async def _error_handler(event: ErrorEvent) -> bool:
@@ -336,7 +282,7 @@ async def run_bot(settings: Settings) -> int:
             name="dossier_bot",
         )
         website_task = asyncio.create_task(
-            _serve_mini_app_after_polling(polling_ready),
+            serve_mini_app_after_polling(polling_ready),
             name="mini_app_web",
         )
         try:

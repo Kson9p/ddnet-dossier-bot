@@ -9,7 +9,6 @@ import { showToast } from '../ui/toast.js';
 import {
   appHeader,
   button,
-  demoNotice,
   playerCard,
   skeletonList,
   stateView,
@@ -99,11 +98,11 @@ export function renderHome({ root, signal, scrollY = 0 }) {
   const view = el('div', { class: 'view view--home' }, [
     appHeader({
       title: 'Анкеты DDNet',
-      subtitle: 'Демо-каталог игроков',
+      subtitle: 'Каталог игроков DDNet',
       logo: true,
       titleTag: 'h1',
       actions: [
-        { iconName: 'info', label: 'О демо-версии', onClick: () => openAboutSheet() },
+        { iconName: 'info', label: 'О приложении', onClick: () => openAboutSheet() },
       ],
     }),
     el('main', { class: 'home' }, [
@@ -122,7 +121,6 @@ export function renderHome({ root, signal, scrollY = 0 }) {
         listHost,
       ]),
       el('footer', { class: 'home__footer' }, [
-        demoNotice(),
         el(
           'button',
           {
@@ -130,7 +128,7 @@ export function renderHome({ root, signal, scrollY = 0 }) {
             type: 'button',
             on: { click: () => openAboutSheet() },
           },
-          'Как устроена демо-версия',
+          'О приложении',
         ),
       ]),
     ]),

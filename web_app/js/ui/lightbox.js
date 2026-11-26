@@ -69,7 +69,7 @@ export function openLightbox(items, startIndex = 0) {
             el('img', {
               class: 'lightbox__image',
               src: item.poster,
-              alt: item.caption || 'Постер демонстрационного видео',
+              alt: item.caption || 'Постер видео',
               draggable: false,
             }),
             el(
@@ -77,21 +77,21 @@ export function openLightbox(items, startIndex = 0) {
               {
                 class: 'lightbox__play',
                 type: 'button',
-                attrs: { 'aria-label': 'Воспроизвести демонстрационное видео' },
+                attrs: { 'aria-label': 'Открыть видео' },
                 on: {
                   click: () =>
-                    showToast('В демо-версии видео недоступно: это заглушка', {
+                    showToast('Видео пока не подключено.', {
                       iconName: 'video',
                     }),
                 },
               },
-              [icon('play', { size: 30 }), el('span', { text: 'Демо-видео' })],
+              [icon('play', { size: 30 }), el('span', { text: 'Видео' })],
             ),
           ])
         : el('img', {
             class: 'lightbox__image',
             src: item.src,
-            alt: item.caption || 'Демонстрационное изображение',
+            alt: item.caption || 'Фото игрока',
             draggable: false,
           });
 

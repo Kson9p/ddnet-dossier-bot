@@ -101,7 +101,6 @@ function normalizeDetail(raw) {
     tagline: typeof raw.tagline === 'string' ? raw.tagline : '',
     description: typeof raw.description === 'string' ? raw.description : '',
     approved: true,
-    demo: raw.demo === true,
     online: raw.online === true,
     currentServer: typeof raw.currentServer === 'string' ? raw.currentServer.trim() : '',
     currentMap: typeof raw.currentMap === 'string' ? raw.currentMap.trim() : '',

@@ -46,6 +46,6 @@ async def run_dossier_after_polling(
     await ready.wait()
     logger.info("[Досье] Запускаем второго бота в общем процессе Python.")
     try:
-        await run(settings, handle_signals=False)
+        await run(settings, handle_signals=False, serve_web=False)
     except Exception as exc:
         logger.error("[Досье] Бот остановлен (%s). Подслушка работает дальше.", type(exc).__name__)

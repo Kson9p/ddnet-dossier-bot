@@ -6,7 +6,7 @@ export function renderNotFound({ root, navigate }) {
   const view = el('div', { class: 'view view--notfound' }, [
     appHeader({
       title: 'Анкеты DDNet',
-      subtitle: 'Демо-каталог игроков',
+      subtitle: 'Каталог игроков DDNet',
       logo: true,
       titleTag: 'h1',
     }),

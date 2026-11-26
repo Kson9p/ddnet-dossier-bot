@@ -26,6 +26,9 @@ dist/
 
 # Локальная база и технические файлы SQLite
 data/
+# This is application source data, not a runtime database.
+!web_app/js/data/
+!web_app/js/data/*.js
 *.db
 *.db-journal
 *.db-wal

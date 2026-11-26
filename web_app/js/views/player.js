@@ -14,7 +14,6 @@ import {
   appHeader,
   avatar,
   button,
-  demoNotice,
   sectionTitle,
   stateView,
 } from '../ui/components.js';
@@ -36,7 +35,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
       centered: true,
       onBack: goBack,
       actions: [
-        { iconName: 'info', label: 'О демо-версии', onClick: () => openAboutSheet() },
+        { iconName: 'info', label: 'О приложении', onClick: () => openAboutSheet() },
       ],
     }),
     content,
@@ -103,7 +102,6 @@ export function renderPlayer({ root, params, signal, goBack }) {
             draggable: false,
           }),
           el('span', { class: 'profile-hero__shade' }),
-          el('span', { class: 'badge badge--demo', text: 'ДЕМО-АНКЕТА' }),
           liveLocation
             ? el('div', { class: 'profile-live', attrs: { 'aria-label': 'Текущая игра' } }, [
                 el('span', { class: 'profile-live__label', text: 'СЕРВЕР' }),
@@ -149,7 +147,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
               sectionTitle('Галерея', {
                 extra: el('span', {
                   class: 'section-note',
-                  text: `${formatMaterials(gallery.length)} · демо`,
+                  text: formatMaterials(gallery.length),
                 }),
               }),
               el(
@@ -182,7 +180,6 @@ export function renderPlayer({ root, params, signal, goBack }) {
           ),
         ]),
 
-        demoNotice(),
       ]),
     ]);
 
@@ -271,7 +268,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
 
     const url = new URL(window.location.href);
     url.hash = `#/player/${encodeURIComponent(player.id)}`;
-    const text = `${player.nick} — демо-анкета DDNet.`;
+    const text = `${player.nick} — анкета игрока DDNet.`;
 
     if (navigator.share) {
       try {
