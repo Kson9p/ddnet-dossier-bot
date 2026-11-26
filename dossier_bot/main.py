@@ -100,7 +100,7 @@ def confirm_keyboard() -> InlineKeyboardMarkup:
 
 def stats_consent_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [button("Запросить у DDStats", "stats:fetch")],
+        [button("Запросить статистику", "stats:fetch")],
         [button("Пропустить запрос", "stats:skip")],
         [button("Назад", "d:back"), button("Отмена", "d:cancel")],
     ])
@@ -331,13 +331,13 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         await state.update_data(nickname=nickname)
         await state.update_data(
             stats_text="DDraceNetwork: запрос статистики пропущен.\n"
-            "KOG: недоступно (нет подтверждённой схемы публичного API).\n"
-            "Eternal Gores: недоступно (публичный API не найден)."
+            "DDNet: часы за последние 365 дней не запрошены.\n"
+            "Eternal Gores: запрос статистики пропущен."
         )
         await state.set_state(UserFlow.stats_consent)
         await send(
             message,
-            "Для очков рейтинга бот может отправить твой DDNet ник внешнему сервису DDStats. Сервис получит ник. Это необязательно: можно пропустить запрос.",
+            "Для статистики бот отправит твой ник сервисам DDStats, DDNet.org и Eternal Gores, чтобы получить очки, часы и публичные данные профиля. Также бот проверит публичный список серверов DDNet и покажет совпадение по нику на серверах Eternal Gores, если найдёт. Запрос необязателен: его можно пропустить.",
             stats_consent_keyboard(),
         )
 
@@ -352,8 +352,8 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
                 await state.update_data(stats_text=result.text)
             else:
                 await state.update_data(stats_text="DDraceNetwork: слишком частые запросы, статистика недоступна.\n"
-                    "KOG: недоступно (нет подтверждённой схемы публичного API).\n"
-                    "Eternal Gores: недоступно (публичный API не найден).")
+                    "DDNet: часы за последние 365 дней не запрошены.\n"
+                    "Eternal Gores: запрос статистики не выполнен.")
         await state.set_state(UserFlow.description)
         await callback.answer("Запрошено" if callback.data == "stats:fetch" else "Пропущено")
         if callback.message:

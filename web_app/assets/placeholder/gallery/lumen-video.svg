@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" fill="none" ><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#0c8599"/>
+    <stop offset="1" stop-color="#22b8cf"/>
+  </linearGradient>
+  <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity=".55"/>
+  </linearGradient>
+  <radialGradient id="glow" cx=".72" cy=".18" r=".9">
+    <stop offset="0" stop-color="#fff" stop-opacity=".26"/>
+    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+  <pattern id="grid" width="72" height="72" patternUnits="userSpaceOnUse">
+    <path d="M72 0H0V72" stroke="#fff" stroke-opacity=".055" stroke-width="1"/>
+  </pattern>
+</defs><rect width="1200" height="900" fill="url(#bg)"/><rect width="1200" height="900" fill="url(#grid)"/><circle cx="37" cy="682" r="236" fill="#fff" fill-opacity="0.08"/><circle cx="1197" cy="843" r="160" fill="#fff" fill-opacity="0.03"/><circle cx="498" cy="899" r="290" fill="#fff" fill-opacity="0.08"/><circle cx="671" cy="696" r="238" fill="#fff" fill-opacity="0.08"/><circle cx="944" cy="551" r="94" fill="#fff" fill-opacity="0.04"/><rect width="1200" height="900" fill="url(#glow)"/><rect width="1200" height="900" fill="#07111b" fill-opacity=".42"/><path d="M51 676 L248 791 L392 675 L566 652 L698 492 L870 602 L1140 641" stroke="#fff" stroke-opacity=".2" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="51" cy="676" r="9" fill="#fff" fill-opacity=".38"/><circle cx="248" cy="791" r="9" fill="#fff" fill-opacity=".38"/><circle cx="392" cy="675" r="9" fill="#fff" fill-opacity=".38"/><circle cx="566" cy="652" r="9" fill="#fff" fill-opacity=".38"/><circle cx="698" cy="492" r="9" fill="#fff" fill-opacity=".38"/><circle cx="870" cy="602" r="9" fill="#fff" fill-opacity=".38"/><circle cx="1140" cy="641" r="9" fill="#fff" fill-opacity=".38"/><text x="600" y="540" text-anchor="middle" font-family="Segoe UI, Inter, Arial, Helvetica, sans-serif" font-size="20" letter-spacing="6" fill="#fff" fill-opacity=".65">ДЕМО-ВИДЕО</text><text x="1144" y="844" text-anchor="end" font-family="Segoe UI, Inter, Arial, Helvetica, sans-serif" font-size="18" letter-spacing="3" fill="#fff" fill-opacity=".4">ВИДЕО-ЗАГЛУШКА</text></svg>

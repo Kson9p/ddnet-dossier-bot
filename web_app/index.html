@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#17212b" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta
+      name="description"
+      content="Демонстрационный каталог анкет игроков DDNet в формате Telegram Mini App. Вымышленные данные и медиа-заглушки."
+    />
+    <title>Анкеты DDNet — демо</title>
+
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/views.css" />
+
+    <!-- Клиентский SDK Mini Apps. Это не Bot API: токены не используются. -->
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+    <script type="module" src="js/main.js"></script>
+  </head>
+  <body>
+    <div id="app" class="app"></div>
+    <div id="overlay-root"></div>
+    <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+    <noscript>
+      <div class="noscript">
+        Для работы каталога нужен JavaScript. Это демонстрационное приложение без
+        реальных данных.
+      </div>
+    </noscript>
+  </body>
+</html>

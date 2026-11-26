@@ -1,0 +1,450 @@
+/* Экраны приложения */
+
+/* ---------- Главная ---------- */
+
+.view--home {
+  padding-bottom: 0;
+}
+
+.home {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 12px 16px calc(26px + var(--safe-bottom));
+}
+
+.home__top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home__list {
+  margin-top: 2px;
+}
+
+.home__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.load-more {
+  margin-top: 14px;
+}
+
+/* ---------- Подробная анкета ---------- */
+
+.view--player {
+  padding-bottom: calc(86px + var(--safe-bottom));
+}
+
+.profile-hero {
+  position: relative;
+}
+
+.profile-hero__cover {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.profile-hero__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-hero__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(9, 15, 23, 0.24) 0%,
+    rgba(9, 15, 23, 0) 42%,
+    rgba(23, 33, 43, 0.72) 100%
+  );
+  pointer-events: none;
+}
+
+.profile-live {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  max-width: min(72%, 280px);
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(8, 15, 23, 0.76);
+  color: #fff;
+  text-align: right;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.profile-live__label {
+  color: #b3f4cc;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+}
+
+.profile-live__server,
+.profile-live__map {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-live__map {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.profile-hero__identity {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -46px;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.profile-hero__avatar-wrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex: 0 0 auto;
+}
+
+.profile-hero__avatar {
+  width: 96px;
+  height: 96px;
+  border: 4px solid var(--bg);
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+}
+
+.profile-hero__nick {
+  max-width: 100%;
+  margin-top: 10px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  overflow-wrap: anywhere;
+}
+
+.profile-hero__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.profile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 18px 16px 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+}
+
+.section > .section-head {
+  margin: 0 2px 9px;
+}
+
+/* Плитки ключевой статистики */
+
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 14px 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  border-left: 1px solid var(--border);
+}
+
+.stat-tile:first-child {
+  border-left: 0;
+}
+
+.stat-tile__value {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-tile__label {
+  font-size: 10.5px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* Таблица статистики */
+
+.info-card {
+  padding: 4px 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.info-row:first-child {
+  border-top: 0;
+}
+
+.info-row__icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.info-row__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+
+.info-row__value {
+  max-width: 58%;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* Описание */
+
+.text-card {
+  padding: 14px 15px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.text-card p {
+  font-size: 13.8px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* Галерея */
+
+.gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.gallery__item {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.gallery__item:first-child {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
+}
+
+.gallery__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 300ms ease;
+}
+
+.gallery__item:active img {
+  transform: scale(1.03);
+}
+
+.gallery__item:focus-visible {
+  outline-offset: -3px;
+}
+
+.gallery__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 14, 21, 0.04) 0%,
+    rgba(8, 14, 21, 0.12) 55%,
+    rgba(8, 14, 21, 0.5) 100%
+  );
+  pointer-events: none;
+}
+
+.gallery__play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: auto;
+  border-radius: 50%;
+  background: rgba(8, 14, 21, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.gallery__play svg {
+  margin-left: 2px;
+}
+
+.gallery__duration {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(8, 14, 21, 0.72);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.gallery__type {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(8, 14, 21, 0.55);
+  color: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ---------- Скелетон анкеты ---------- */
+
+.player-skeleton {
+  padding-bottom: 30px;
+}
+
+.skeleton--hero {
+  aspect-ratio: 16 / 9;
+  border-radius: 0;
+}
+
+.player-skeleton__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: -44px;
+  padding: 0 20px;
+}
+
+.skeleton--profile-avatar {
+  width: 92px;
+  height: 92px;
+  border: 4px solid var(--bg);
+  border-radius: 50%;
+}
+
+.player-skeleton__head .skeleton--line {
+  height: 12px;
+}
+
+.player-skeleton__head .skeleton--thin {
+  height: 9px;
+}
+
+.skeleton-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 20px 16px 0;
+}
+
+.skeleton-tiles .skeleton--tile {
+  height: 64px;
+  border-radius: 12px;
+}
+
+.player-skeleton__block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 16px 0;
+}
+
+.skeleton--panel {
+  height: 190px;
+  border-radius: 16px;
+}
+
+.skeleton--panel-sm {
+  height: 100px;
+}
+
+/* ---------- Ошибки ---------- */
+
+.player-error {
+  padding: 26px 16px calc(40px + var(--safe-bottom));
+}
+
+/* ---------- 404 ---------- */
+
+.view--notfound .notfound {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px calc(30px + var(--safe-bottom));
+}
