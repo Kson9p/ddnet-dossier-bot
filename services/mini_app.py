@@ -25,28 +25,38 @@ log = logging.getLogger(__name__)
 WEB_APP_DIR = Path(__file__).resolve().parent.parent / "web_app"
 
 
-def _telegram_owner(init_data: str, bot_token: str, owner_id: int) -> bool:
-    """Validate Telegram Mini App initData and match its user to the owner."""
+def _telegram_user_id(init_data: str, bot_token: str) -> int | None:
+    """Validate Telegram Mini App initData and return its signed user ID."""
     if not init_data or len(init_data) > 8192:
-        return False
+        return None
     try:
         pairs = parse_qsl(init_data, keep_blank_values=True, strict_parsing=True)
         fields = dict(pairs)
         if len(fields) != len(pairs):
-            return False
+            return None
         received_hash = fields.pop("hash")
         auth_date = int(fields["auth_date"])
         user = json.loads(fields["user"])
         user_id = user.get("id") if isinstance(user, dict) else None
         now = int(time.time())
         if now - auth_date > 86_400 or auth_date > now + 60 or type(user_id) is not int:
-            return False
+            return None
         check_string = "\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
         secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
-        expected_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
-        return hmac.compare_digest(received_hash, expected_hash) and user_id == owner_id
+        expected = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
+        return user_id if hmac.compare_digest(received_hash, expected) else None
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
-        return False
+        return None
+
+
+def _telegram_owner(init_data: str, bot_token: str, owner_id: int) -> bool:
+    return _telegram_user_id(init_data, bot_token) == owner_id
+
+
+def _vote_key(bot_token: str, user_id: int) -> str:
+    return hmac.new(
+        bot_token.encode(), f"dossier-voter:{user_id}".encode(), hashlib.sha256
+    ).hexdigest()
 
 
 async def serve_mini_app_after_polling(
@@ -146,7 +156,41 @@ async def serve_mini_app_after_polling(
                     pass
         return web.json_response({"deleted": True}, headers={"Cache-Control": "no-store"})
 
-    async def public_record(row: dict, *, summary: bool = False) -> dict:
+    async def cast_vote(request: web.Request) -> web.Response:
+        if store is None or bot is None:
+            raise web.HTTPServiceUnavailable()
+        user_id = _telegram_user_id(
+            request.headers.get("X-Telegram-Init-Data", ""), bot.token
+        )
+        if user_id is None:
+            return web.json_response({"error": "telegram_auth_required"}, status=401)
+        try:
+            dossier_id = int(request.match_info["player_id"])
+        except ValueError:
+            raise web.HTTPNotFound() from None
+        row = await store.get(dossier_id)
+        if row is None or row.get("status") != "approved":
+            raise web.HTTPNotFound()
+        if request.content_length is not None and request.content_length > 256:
+            return web.json_response({"error": "payload_too_large"}, status=413)
+        try:
+            payload = await request.json()
+        except (json.JSONDecodeError, UnicodeDecodeError, aiohttp.ClientError):
+            return web.json_response({"error": "invalid_json"}, status=400)
+        score = payload.get("score") if isinstance(payload, dict) else None
+        if type(score) is not int or not 1 <= score <= 7:
+            return web.json_response({"error": "invalid_score"}, status=400)
+        voter_key = _vote_key(bot.token, user_id)
+        outcome = await store.cast_vote(dossier_id, voter_key, score)
+        rating = await store.get_vote_summary(dossier_id, voter_key)
+        return web.json_response(
+            {"outcome": outcome, "rating": rating},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    async def public_record(
+        row: dict, *, summary: bool = False, voter_key: str | None = None
+    ) -> dict:
         try:
             media = json.loads(row.get("media_json", "[]"))
         except (TypeError, json.JSONDecodeError):
@@ -187,6 +231,10 @@ async def serve_mini_app_after_polling(
             record["lastSeenHoursAgo"] = None
         else:
             record.pop("gender", None)
+            if store is not None:
+                record["rating"] = await store.get_vote_summary(
+                    int(row["id"]), voter_key
+                )
         return record
 
     async def list_players(request: web.Request) -> web.Response:
@@ -216,7 +264,14 @@ async def serve_mini_app_after_polling(
         row = await store.get(dossier_id)
         if row is None or row.get("status") != "approved":
             raise web.HTTPNotFound()
-        return web.json_response(await public_record(row), headers={"Cache-Control": "no-store"})
+        user_id = _telegram_user_id(
+            request.headers.get("X-Telegram-Init-Data", ""), bot.token if bot else ""
+        )
+        voter_key = _vote_key(bot.token, user_id) if bot is not None and user_id is not None else None
+        return web.json_response(
+            await public_record(row, voter_key=voter_key),
+            headers={"Cache-Control": "no-store"},
+        )
 
     async def get_player_media(request: web.Request) -> web.StreamResponse:
         if store is None or bot is None:
@@ -261,6 +316,7 @@ async def serve_mini_app_after_polling(
     app.router.add_get("/api/players", list_players)
     app.router.add_get("/api/players/{player_id}/media/{media_index}", get_player_media)
     app.router.add_get("/api/players/{player_id}", get_player)
+    app.router.add_post("/api/players/{player_id}/vote", cast_vote)
     app.router.add_get("/api/admin/session", admin_session)
     app.router.add_post("/api/verification/source-bot", source_bot_verification)
     app.router.add_delete("/api/players/{player_id}", delete_player)

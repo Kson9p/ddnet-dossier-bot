@@ -356,6 +356,84 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
+/* ---------- Оценка анкеты ---------- */
+
+.rating-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.rating-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.rating-summary__average {
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.rating-summary__label,
+.rating-hint {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.rating-scores {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.rating-score {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.rating-score--selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.rating-score:disabled {
+  opacity: 0.58;
+  cursor: default;
+}
+
+.rating-score:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.rating-score:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.rating-hint {
+  margin: 0;
+}
+
 /* ---------- Скелетон анкеты ---------- */
 
 .player-skeleton {

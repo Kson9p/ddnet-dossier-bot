@@ -27,6 +27,8 @@ import { showToast } from '../ui/toast.js';
 export function renderPlayer({ root, params, signal, goBack }) {
   const id = params.id ?? '';
   const content = el('div', { class: 'player-page' });
+  let votePending = false;
+  let currentIsAdmin = false;
 
   const view = el('div', { class: 'view view--player' }, [
     appHeader({
@@ -53,6 +55,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
       if (signal.aborted) return;
       const isAdmin = await playersApi.isAdmin();
       if (signal.aborted) return;
+      currentIsAdmin = isAdmin;
       renderProfile(player, isAdmin);
     } catch (error) {
       if (signal.aborted || error?.name === 'AbortError') return;
@@ -172,6 +175,8 @@ export function renderPlayer({ root, params, signal, goBack }) {
           ),
         ]) : null,
 
+        ratingSection(player),
+
         isAdmin ? el('section', { class: 'section profile-admin-actions' }, [
           button({
             label: 'Удалить анкету',
@@ -186,6 +191,104 @@ export function renderPlayer({ root, params, signal, goBack }) {
 
     content.replaceChildren(profile);
     view.appendChild(actionBar(player));
+  }
+
+  function ratingSection(player) {
+    const rating = player.rating ?? {
+      count: 0, average: null, myScore: null, changeAt: null, changeUsed: false,
+    };
+    const hasTelegramAuth = Boolean(window.Telegram?.WebApp?.initData);
+    const now = Math.floor(Date.now() / 1000);
+    const canVote = hasTelegramAuth && (
+      rating.myScore === null
+      || (!rating.changeUsed && rating.changeAt !== null && now >= rating.changeAt)
+    );
+    let hint;
+    if (!hasTelegramAuth) {
+      hint = 'Чтобы проголосовать, открой анкету внутри Telegram.';
+    } else if (rating.myScore === null) {
+      hint = 'Один голос на анкету. Изменить его можно через неделю — только один раз.';
+    } else if (rating.changeUsed) {
+      hint = `Твоя оценка: ${rating.myScore}. Изменение уже использовано.`;
+    } else if (rating.changeAt !== null && now < rating.changeAt) {
+      const date = new Date(rating.changeAt * 1000).toLocaleString('ru-RU', {
+        day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+      });
+      hint = `Твоя оценка: ${rating.myScore}. Изменить её можно после ${date}.`;
+    } else {
+      hint = `Твоя оценка: ${rating.myScore}. Можно изменить её один раз.`;
+    }
+
+    const average = rating.average === null
+      ? '—'
+      : rating.average.toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const scores = Array.from({ length: 7 }, (_, index) => index + 1).map((score) => {
+      const selected = rating.myScore === score;
+      return el('button', {
+        class: `rating-score${selected ? ' rating-score--selected' : ''}`,
+        type: 'button',
+        attrs: {
+          'aria-label': `Поставить оценку ${score}`,
+          'aria-pressed': String(selected),
+          disabled: !canVote || votePending,
+        },
+        on: { click: () => submitVote(player, score) },
+      }, String(score));
+    });
+
+    return el('section', { class: 'section rating-section' }, [
+      sectionTitle('Оценка анкеты'),
+      el('div', { class: 'rating-card' }, [
+        el('div', { class: 'rating-summary' }, [
+          el('strong', { class: 'rating-summary__average', text: average }),
+          el('span', { class: 'rating-summary__label', text: `Средняя оценка · ${voteCountLabel(rating.count)}` }),
+        ]),
+        el('div', { class: 'rating-scores', attrs: { role: 'group', 'aria-label': 'Оценка от 1 до 7' } }, scores),
+        el('p', { class: 'rating-hint', text: hint }),
+      ]),
+    ]);
+  }
+
+  function voteCountLabel(count) {
+    const lastTwo = count % 100;
+    const last = count % 10;
+    const word = lastTwo >= 11 && lastTwo <= 14
+      ? 'голосов'
+      : last === 1
+        ? 'голос'
+        : last >= 2 && last <= 4
+          ? 'голоса'
+          : 'голосов';
+    return `${count} ${word}`;
+  }
+
+  async function submitVote(player, score) {
+    if (votePending) return;
+    votePending = true;
+    const scrollY = window.scrollY;
+    try {
+      const result = await playersApi.votePlayer(player.id, score);
+      player.rating = result.rating;
+      votePending = false;
+      renderProfile(player, currentIsAdmin);
+      window.scrollTo(0, scrollY);
+      const messages = {
+        created: 'Голос учтён',
+        changed: 'Оценка изменена',
+        same: 'У тебя уже стоит эта оценка',
+        too_early: 'Изменить оценку можно только через неделю после голоса',
+        change_used: 'Голос можно изменить только один раз',
+      };
+      showToast(messages[result.outcome] || 'Голос учтён', { iconName: 'check' });
+      telegram.notify('success');
+    } catch (error) {
+      showToast(error?.message || 'Не удалось отправить голос', {
+        iconName: 'alert',
+        tone: 'danger',
+      });
+    } finally {
+      votePending = false;
+    }
   }
 
   async function deleteProfile(player) {

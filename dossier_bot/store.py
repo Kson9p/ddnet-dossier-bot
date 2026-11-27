@@ -50,6 +50,17 @@ class DossierStore:
                 created_at INTEGER NOT NULL
             )
         """)
+        await self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS dossier_votes (
+                dossier_id INTEGER NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+                voter_key TEXT NOT NULL,
+                score INTEGER NOT NULL CHECK(score BETWEEN 1 AND 7),
+                created_at INTEGER NOT NULL,
+                changed_at INTEGER,
+                change_count INTEGER NOT NULL DEFAULT 0 CHECK(change_count BETWEEN 0 AND 1),
+                PRIMARY KEY(dossier_id, voter_key)
+            )
+        """)
         await self.conn.commit()
 
     async def close(self) -> None:
@@ -92,6 +103,67 @@ class DossierStore:
         )
         row = await cursor.fetchone()
         return bool(row and int(row["verified_at"]) >= int(time.time()) - max_age)
+
+    async def get_vote_summary(self, dossier_id: int, voter_key: str | None = None) -> dict:
+        cursor = await self._db().execute(
+            "SELECT COUNT(*) AS vote_count, AVG(score) AS average FROM dossier_votes WHERE dossier_id=?",
+            (dossier_id,),
+        )
+        aggregate = await cursor.fetchone()
+        own_vote = None
+        if voter_key:
+            cursor = await self._db().execute(
+                "SELECT score, created_at, change_count FROM dossier_votes WHERE dossier_id=? AND voter_key=?",
+                (dossier_id, voter_key),
+            )
+            own_vote = await cursor.fetchone()
+        created_at = int(own_vote["created_at"]) if own_vote else None
+        change_count = int(own_vote["change_count"]) if own_vote else 0
+        return {
+            "count": int(aggregate["vote_count"] or 0),
+            "average": round(float(aggregate["average"]), 2) if aggregate["average"] is not None else None,
+            "myScore": int(own_vote["score"]) if own_vote else None,
+            "changeAt": created_at + 7 * 24 * 60 * 60 if created_at is not None and change_count == 0 else None,
+            "changeUsed": change_count >= 1,
+        }
+
+    async def cast_vote(
+        self, dossier_id: int, voter_key: str, score: int, *, now: int | None = None
+    ) -> str:
+        if type(score) is not int or not 1 <= score <= 7:
+            raise ValueError("Vote score must be an integer between 1 and 7")
+        timestamp = int(time.time()) if now is None else now
+        connection = self._db()
+        await connection.execute("BEGIN IMMEDIATE")
+        try:
+            cursor = await connection.execute(
+                "SELECT score, created_at, change_count FROM dossier_votes WHERE dossier_id=? AND voter_key=?",
+                (dossier_id, voter_key),
+            )
+            existing = await cursor.fetchone()
+            if existing is None:
+                await connection.execute(
+                    "INSERT INTO dossier_votes(dossier_id,voter_key,score,created_at) VALUES(?,?,?,?)",
+                    (dossier_id, voter_key, score, timestamp),
+                )
+                outcome = "created"
+            elif int(existing["score"]) == score:
+                outcome = "same"
+            elif int(existing["change_count"]) >= 1:
+                outcome = "change_used"
+            elif timestamp < int(existing["created_at"]) + 7 * 24 * 60 * 60:
+                outcome = "too_early"
+            else:
+                await connection.execute(
+                    "UPDATE dossier_votes SET score=?, changed_at=?, change_count=1 WHERE dossier_id=? AND voter_key=?",
+                    (score, timestamp, dossier_id, voter_key),
+                )
+                outcome = "changed"
+            await connection.commit()
+            return outcome
+        except BaseException:
+            await connection.rollback()
+            raise
 
     async def add(self, user_id: int, draft: dict) -> int:
         cursor = await self._db().execute(

@@ -45,6 +45,7 @@
  * @property {PlayerStats} stats
  * @property {string} cover
  * @property {GalleryItem[]} gallery
+ * @property {{count: number, average: number | null, myScore: number | null, changeAt: number | null, changeUsed: boolean}} rating
  */
 
 /**

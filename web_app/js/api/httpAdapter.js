@@ -115,6 +115,22 @@ function normalizeDetail(raw) {
     },
     cover: requireString(raw.cover, 'cover'),
     gallery,
+    rating: normalizeRating(raw.rating),
+  };
+}
+
+function normalizeRating(raw) {
+  if (!isObject(raw)) {
+    return { count: 0, average: null, myScore: null, changeAt: null, changeUsed: false };
+  }
+  return {
+    count: Number.isInteger(raw.count) && raw.count >= 0 ? raw.count : 0,
+    average: optionalNumber(raw.average),
+    myScore: Number.isInteger(raw.myScore) && raw.myScore >= 1 && raw.myScore <= 7
+      ? raw.myScore
+      : null,
+    changeAt: Number.isInteger(raw.changeAt) ? raw.changeAt : null,
+    changeUsed: raw.changeUsed === true,
   };
 }
 
@@ -129,13 +145,13 @@ export function createHttpPlayersApi(options = {}) {
    * @param {string} path
    * @param {AbortSignal} [signal]
    */
-  async function request(path, signal) {
+  async function request(path, signal, extraHeaders = {}) {
     let response;
     try {
       response = await fetchImpl(`${baseUrl}${path}`, {
         method: 'GET',
         credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
+        headers: { Accept: 'application/json', ...extraHeaders },
         signal,
       });
     } catch (error) {
@@ -212,9 +228,48 @@ export function createHttpPlayersApi(options = {}) {
     return true;
   }
 
+  async function votePlayer(id, score) {
+    const initData = getInitData();
+    if (!initData) {
+      throw new PlayersApiError('forbidden', 'Чтобы голосовать, открой анкету в Telegram.');
+    }
+    let response;
+    try {
+      response = await fetchImpl(`${baseUrl}/players/${encodeURIComponent(id)}/vote`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Telegram-Init-Data': initData,
+        },
+        body: JSON.stringify({ score }),
+      });
+    } catch {
+      throw new PlayersApiError('network', 'Не удалось отправить голос.');
+    }
+    if (response.status === 401) {
+      throw new PlayersApiError('forbidden', 'Открой анкету из Telegram и попробуй ещё раз.', { status: 401 });
+    }
+    if (!response.ok) {
+      throw new PlayersApiError('server', `Не удалось сохранить голос (${response.status}).`, { status: response.status });
+    }
+    let payload;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new PlayersApiError('invalid_data', 'Сервер вернул некорректный ответ.', { status: 502 });
+    }
+    if (!isObject(payload) || typeof payload.outcome !== 'string') {
+      throw new PlayersApiError('invalid_data', 'Сервер вернул некорректный ответ.', { status: 502 });
+    }
+    return { outcome: payload.outcome, rating: normalizeRating(payload.rating) };
+  }
+
   return {
     isAdmin,
     deletePlayer,
+    votePlayer,
     /** @param {import('./types.js').PlayerListParams} [params] */
     async getPlayers(params = {}) {
       const { query = '', sort = 'default', gender = '', page = 1, pageSize = config.pageSize, signal } = params;
@@ -246,7 +301,9 @@ export function createHttpPlayersApi(options = {}) {
 
     /** @param {string} id @param {{ signal?: AbortSignal }} [opts] */
     async getPlayer(id, opts = {}) {
-      const payload = await request(`/players/${encodeURIComponent(id)}`, opts.signal);
+      const initData = getInitData();
+      const headers = initData ? { 'X-Telegram-Init-Data': initData } : {};
+      const payload = await request(`/players/${encodeURIComponent(id)}`, opts.signal, headers);
       return normalizeDetail(payload);
     },
   };
