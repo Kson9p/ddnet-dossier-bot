@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" fill="none">
   <defs>
     <linearGradient id="bg" x1="44" y1="32" x2="916" y2="512" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#245f75"/>
-      <stop offset="1" stop-color="#4b57b8"/>
+      <stop stop-color="#62b7e7"/>
+      <stop offset="1" stop-color="#2759a9"/>
     </linearGradient>
     <pattern id="lines" width="88" height="88" patternTransform="rotate(28)" patternUnits="userSpaceOnUse">
       <path d="M0 0v88" stroke="#fff" stroke-opacity=".08" stroke-width="24"/>
