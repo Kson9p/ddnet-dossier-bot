@@ -156,7 +156,7 @@ img {
   margin: 0 auto;
   background:
     linear-gradient(180deg, rgba(233, 244, 255, 0.56), rgba(228, 240, 255, 0.64) 50%, rgba(236, 246, 255, 0.76)),
-    url('../assets/sky-city.png') center center / cover no-repeat;
+    url('../assets/sky-city.png?v=sky-20261127') center center / cover no-repeat;
   pointer-events: none;
 }
 

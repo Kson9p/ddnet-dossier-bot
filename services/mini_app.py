@@ -321,6 +321,16 @@ async def serve_mini_app_after_polling(
     app.router.add_post("/api/verification/source-bot", source_bot_verification)
     app.router.add_delete("/api/players/{player_id}", delete_player)
     # Keep developer notes and local tools out of the public route.
+    # Revalidate static files after deployments; Telegram WebViews may otherwise
+    # keep an old stylesheet while the HTML has already updated.
+    @web.middleware
+    async def revalidate_static(request: web.Request, handler):
+        response = await handler(request)
+        if request.path.startswith(("/css/", "/js/", "/assets/")):
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        return response
+
+    app.middlewares.append(revalidate_static)
     app.router.add_static("/css/", WEB_APP_DIR / "css", show_index=False)
     app.router.add_static("/js/", WEB_APP_DIR / "js", show_index=False)
     app.router.add_static("/assets/", WEB_APP_DIR / "assets", show_index=False)
