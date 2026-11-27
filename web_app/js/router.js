@@ -139,8 +139,18 @@ export function createRouter(options) {
 
   if (!root) throw new Error('Не найден корневой контейнер приложения');
 
-  if (!window.location.hash) {
-    window.history.replaceState(null, '', '#/');
+  const initialPath = readPath();
+  if (
+    !window.location.hash
+    || (telegram.available && !matchRoute(initialPath))
+  ) {
+    // Telegram may preserve an old Mini App short name in the hash even when
+    // the configured Menu Button URL points to the site root. Start at home.
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}#/`,
+    );
   }
 
   window.addEventListener('hashchange', handleRoute);
