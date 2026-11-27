@@ -13,6 +13,7 @@ const PATHS = {
   chevronDown: '<path d="m6 9 6 6 6-6"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   more: '<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
+  sort: '<path d="M4 7h16M7 12h10m-7 5h4"/>',
   share:
     '<path d="M12 15V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/>',
   copy:

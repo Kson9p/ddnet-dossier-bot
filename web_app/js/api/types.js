@@ -66,7 +66,7 @@
 /**
  * @typedef {Object} PlayerListParams
  * @property {string} [query]
- * @property {'default' | 'points' | 'maps'} [sort]
+ * @property {'default' | 'points' | 'maps' | 'rating_desc' | 'rating_asc' | 'name_asc' | 'name_desc'} [sort]
  * @property {'' | 'boy' | 'girl'} [gender]
  * @property {number} [page]
  * @property {number} [pageSize]

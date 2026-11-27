@@ -72,7 +72,7 @@ export function renderHome({ root, signal, scrollY = 0 }) {
   ]);
 
   const chipIsActive = (id) => {
-    if (id === 'all') return sort === 'default' && gender === '';
+    if (id === 'all') return sort !== 'points' && gender === '';
     if (id === 'points') return sort === 'points';
     return gender === id;
   };
@@ -95,6 +95,7 @@ export function renderHome({ root, signal, scrollY = 0 }) {
             } else {
               gender = option.id;
             }
+            sortSelect.value = sort;
             telegram.haptic('light');
             for (const chip of chipButtons) {
               const active = chipIsActive(chip.dataset.filter);
@@ -109,14 +110,40 @@ export function renderHome({ root, signal, scrollY = 0 }) {
     ),
   );
 
+
+  const sortSelect = el('select', {
+    class: 'sort-select',
+    attrs: { 'aria-label': 'Сортировка анкет' },
+    on: {
+      change: (event) => {
+        sort = event.currentTarget.value;
+        telegram.haptic('light');
+        load({ reset: true });
+      },
+    },
+  }, [
+    el('option', { value: 'default', text: 'Сортировка' }),
+    el('option', { value: 'points', text: 'Очки: больше' }),
+    el('option', { value: 'rating_desc', text: 'Рейтинг: выше' }),
+    el('option', { value: 'rating_asc', text: 'Рейтинг: ниже' }),
+    el('option', { value: 'name_asc', text: 'Имя: A–Z' }),
+    el('option', { value: 'name_desc', text: 'Имя: Z–A' }),
+  ]);
+
   const view = el('div', { class: 'view view--home' }, [
     el('main', { class: 'home' }, [
       el('div', { class: 'home__top' }, [
         searchBox,
-        el('div', {
-          class: 'chips',
-          attrs: { role: 'group', 'aria-label': 'Фильтр и сортировка анкет' },
-        }, chipButtons),
+        el('div', { class: 'filter-row' }, [
+          el('div', {
+            class: 'chips',
+            attrs: { role: 'group', 'aria-label': 'Фильтры анкет' },
+          }, chipButtons),
+          el('label', { class: 'sort-control' }, [
+            icon('sort', { size: 16 }),
+            sortSelect,
+          ]),
+        ]),
       ]),
       el('div', { class: 'home__list' }, [
         el('div', { class: 'section-head' }, [

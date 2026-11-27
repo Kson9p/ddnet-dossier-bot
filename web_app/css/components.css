@@ -160,7 +160,16 @@
   flex: 0 0 auto;
 }
 
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .chips {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   gap: 8px;
   overflow-x: auto;
@@ -171,6 +180,42 @@
 
 .chips::-webkit-scrollbar {
   display: none;
+}
+
+.sort-control {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.sort-control svg {
+  flex: 0 0 auto;
+}
+
+.sort-select {
+  width: 112px;
+  max-width: 30vw;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  text-overflow: ellipsis;
+}
+
+.sort-select option {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .chip {

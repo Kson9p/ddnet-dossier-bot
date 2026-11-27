@@ -16,7 +16,7 @@ import { PlayersApiError } from './errors.js';
  * Telegram Bot API и токены в браузере не используются.
  */
 
-const VALID_SORTS = new Set(['default', 'points', 'maps']);
+const VALID_SORTS = new Set(['default', 'points', 'maps', 'rating_desc', 'rating_asc', 'name_asc', 'name_desc']);
 const VALID_GENDERS = new Set(['', 'boy', 'girl']);
 
 /**

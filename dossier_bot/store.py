@@ -195,6 +195,31 @@ class DossierStore:
                 match = re.search(r"DDRaceNetwork:\s*(\d+)\s+очков", row.get("stats_text", ""), re.IGNORECASE)
                 return int(match.group(1)) if match else 0
             rows.sort(key=points, reverse=True)
+        elif sort in {"name_asc", "name_desc"}:
+            rows.sort(
+                key=lambda row: (row["nickname"].casefold(), int(row["id"])),
+                reverse=sort == "name_desc",
+            )
+        elif sort in {"rating_asc", "rating_desc"}:
+            cursor = await self._db().execute(
+                "SELECT dossier_id, AVG(score) AS average FROM dossier_votes GROUP BY dossier_id"
+            )
+            averages = {
+                int(row["dossier_id"]): float(row["average"])
+                for row in await cursor.fetchall()
+            }
+            if sort == "rating_desc":
+                rows.sort(key=lambda row: (
+                    averages.get(int(row["id"])) is None,
+                    -averages.get(int(row["id"]), 0),
+                    row["nickname"].casefold(),
+                ))
+            else:
+                rows.sort(key=lambda row: (
+                    averages.get(int(row["id"])) is None,
+                    averages.get(int(row["id"]), 0),
+                    row["nickname"].casefold(),
+                ))
         total = len(rows)
         start = (page - 1) * page_size
         return rows[start:start + page_size], total
