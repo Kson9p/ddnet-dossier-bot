@@ -17,11 +17,21 @@ from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
-from aiogram.exceptions import TelegramAPIError, TelegramConflictError, TelegramUnauthorizedError
-from aiogram.filters import Command, CommandStart, StateFilter
+from aiogram.exceptions import (
+    TelegramAPIError,
+    TelegramConflictError,
+    TelegramUnauthorizedError,
+)
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import CallbackQuery, ErrorEvent, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    CallbackQuery,
+    ErrorEvent,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
 # Some hosting panels can only run a Python file from the repository.
 if __package__ in (None, ""):
@@ -31,6 +41,7 @@ from dossier_bot.config import ConfigError, Settings, load_settings
 from dossier_bot.states import AdminFlow, UserFlow
 from dossier_bot.stats import DdnetStatsProvider
 from dossier_bot.store import DossierStore
+from services.dossier_verification import verify_proof
 from services.mini_app import serve_mini_app_after_polling
 
 log = logging.getLogger(__name__)
@@ -69,6 +80,15 @@ def main_menu() -> InlineKeyboardMarkup:
         [button("Добавить досье", "d:start")],
         [button("Написать в техподдержку", "s:start")],
         [button("О боте", "about")],
+    ])
+
+
+def verification_keyboard(channel_username: str, source_bot_username: str, nonce: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Подписаться на канал", url=f"https://t.me/{channel_username}")],
+        [InlineKeyboardButton(text="Открыть бота Подслушка", url=f"https://t.me/{source_bot_username}?start=dossier_verify_{nonce}")],
+        [button("Проверить подписку", "d:verify")],
+        [button("В меню", "home")],
     ])
 
 
@@ -275,6 +295,14 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
     @router.message(CommandStart())
     async def start(message: Message, state: FSMContext) -> None:
         await state.clear()
+        if message.from_user is None:
+            return
+        parts = (message.text or "").split(maxsplit=1)
+        if len(parts) == 2:
+            verified = verify_proof(settings.link_secret, parts[1], message.from_user.id)
+            if verified and await store.accept_source_bot_proof(message.from_user.id, *verified):
+                await send(message, "✅ Бот «Подслушка» подтверждён. Вернись и нажми «Проверить подписку».", main_menu())
+                return
         await send(message, "👋 Привет! Здесь можно подать досье о себе или обратиться в поддержку.", main_menu())
 
     @router.message(Command("help"))
@@ -300,11 +328,59 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
 
     @router.callback_query(F.data == "d:start")
     async def begin_dossier(callback: CallbackQuery, state: FSMContext) -> None:
-        await state.clear(); await state.set_state(UserFlow.gender)
+        await state.clear()
+        if callback.from_user is None or callback.message is None:
+            await callback.answer("Не удалось проверить аккаунт", show_alert=True); return
+        is_member = await channel_membership(callback.from_user.id)
+        source_verified = await store.has_source_bot_verification(callback.from_user.id)
+        if not is_member or not source_verified:
+            nonce = secrets.token_urlsafe(6)
+            await store.issue_verification_challenge(callback.from_user.id, nonce, int(time.time()))
+            missing = []
+            if not is_member:
+                missing.append("подпишись на канал")
+            if not source_verified:
+                missing.append("запусти бота «Подслушка» и вернись по ссылке из него")
+            await callback.message.answer(
+                "Чтобы добавить досье, " + " и ".join(missing) + ". Затем нажми «Проверить подписку».",
+                reply_markup=verification_keyboard(settings.channel_username, settings.source_bot_username, nonce),
+            )
+            await callback.answer()
+            return
+        await state.set_state(UserFlow.gender)
         await state.update_data(media=[], video_allowed=secrets.randbelow(2) == 0)
         await callback.answer()
         if callback.message:
             await callback.message.answer("Выбери категорию:", reply_markup=gender_keyboard())
+
+    async def channel_membership(user_id: int) -> bool:
+        try:
+            member = await bot.get_chat_member(f"@{settings.channel_username}", user_id)
+        except TelegramAPIError as exc:
+            log.warning("Channel membership lookup failed (%s).", type(exc).__name__)
+            return False
+        return member.status in {"creator", "administrator", "member"} or (
+            member.status == "restricted" and bool(getattr(member, "is_member", False))
+        )
+
+    @router.callback_query(F.data == "d:verify")
+    async def verify_subscription(callback: CallbackQuery, state: FSMContext) -> None:
+        if callback.from_user is None or callback.message is None:
+            await callback.answer("Не удалось проверить аккаунт", show_alert=True); return
+        is_member = await channel_membership(callback.from_user.id)
+        source_verified = await store.has_source_bot_verification(callback.from_user.id)
+        if not is_member or not source_verified:
+            missing = []
+            if not is_member:
+                missing.append("подпишись на канал")
+            if not source_verified:
+                missing.append("запусти бота «Подслушка» по кнопке выше и перейди обратно по ссылке")
+            await callback.answer("Пока не выполнено: " + " и ".join(missing), show_alert=True)
+            return
+        await callback.answer("Проверка пройдена")
+        await state.set_state(UserFlow.gender)
+        await state.update_data(media=[], video_allowed=secrets.randbelow(2) == 0)
+        await callback.message.answer("Выбери категорию:", reply_markup=gender_keyboard())
 
     @router.callback_query(F.data.startswith("d:gender:"))
     async def choose_gender(callback: CallbackQuery, state: FSMContext) -> None:

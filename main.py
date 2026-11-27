@@ -252,6 +252,8 @@ async def run_bot(settings: Settings) -> int:
                 rate_limiter=rate_limiter,
                 notice_throttle=notice_throttle,
                 media_buffer=user_media_buffer,
+                dossier_link_secret=settings.dossier_link_secret,
+                dossier_bot_username=settings.dossier_bot_username,
             )
         )
         dispatcher.errors.register(_error_handler)

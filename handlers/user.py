@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Sequence
 
 from aiogram import F, Router
 from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
 import keyboards
 import ui
@@ -17,6 +23,7 @@ from callbacks import UserCB
 from config import Settings
 from database import Database, DatabaseError
 from services.content import extract_single
+from services.dossier_verification import make_proof
 from services.media_groups import MediaGroupBuffer
 from services.rate_limit import NoticeThrottle, RateLimiter
 from services.relay import RelayService
@@ -34,6 +41,8 @@ def create_user_router(
     rate_limiter: RateLimiter,
     notice_throttle: NoticeThrottle,
     media_buffer: MediaGroupBuffer,
+    dossier_link_secret: str = "",
+    dossier_bot_username: str = "",
 ) -> Router:
     router = Router(name="user")
     router.message.filter(
@@ -65,6 +74,23 @@ def create_user_router(
     async def handle_start(message: Message, state: FSMContext) -> None:
         if message.from_user is None:
             return
+        payload = (message.text or "").split(maxsplit=1)
+        if len(payload) == 2 and payload[1].startswith("dossier_verify_"):
+            nonce = payload[1][len("dossier_verify_"):]
+            if (dossier_link_secret and dossier_bot_username
+                    and re.fullmatch(r"[A-Za-z0-9_-]{6,12}", nonce)):
+                proof = make_proof(dossier_link_secret, message.from_user.id, nonce)
+                await send_text(
+                    message,
+                    "✅ Готово. Вернись в бот досье и нажми «Проверить подписку».",
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                        InlineKeyboardButton(
+                            text="Вернуться в бот досье",
+                            url=f"https://t.me/{dossier_bot_username}?start={proof}",
+                        )
+                    ]]),
+                )
+                return
         await state.clear()
         try:
             dialog = await database.get_or_create_dialog(

@@ -46,6 +46,8 @@ class Settings:
     telegram_max_retries: int
     floodwait_max_seconds: int
     maintenance_interval_seconds: int
+    dossier_link_secret: str = ""
+    dossier_bot_username: str = ""
 
     @property
     def tzinfo(self) -> ZoneInfo:
@@ -212,6 +214,13 @@ def load_settings(env_file: str | Path = ".env") -> Settings:
         errors=errors,
     )
 
+    dossier_link_secret = env.get("DOSSIER_LINK_SECRET", "").strip()
+    dossier_bot_username = env.get("DOSSIER_BOT_USERNAME", "").strip().lstrip("@")
+    if dossier_link_secret and len(dossier_link_secret) < 32:
+        errors.append("DOSSIER_LINK_SECRET должен содержать не менее 32 символов.")
+    if dossier_bot_username and not re.fullmatch(r"[A-Za-z0-9_]{5,32}", dossier_bot_username):
+        errors.append("DOSSIER_BOT_USERNAME должен быть username бота без @.")
+
     if errors:
         raise ConfigError("Проверьте настройки окружения:\n- " + "\n- ".join(errors))
 
@@ -235,4 +244,6 @@ def load_settings(env_file: str | Path = ".env") -> Settings:
         telegram_max_retries=telegram_max_retries,
         floodwait_max_seconds=floodwait_max_seconds,
         maintenance_interval_seconds=maintenance_interval_seconds,
+        dossier_link_secret=dossier_link_secret,
+        dossier_bot_username=dossier_bot_username,
     )

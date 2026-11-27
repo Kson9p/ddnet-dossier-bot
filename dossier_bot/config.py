@@ -20,6 +20,9 @@ class Settings:
     owner_id: int
     database_path: Path
     about_text: str
+    link_secret: str
+    source_bot_username: str
+    channel_username: str
 
 
 def load_settings() -> Settings:
@@ -62,4 +65,11 @@ def load_optional_settings() -> Settings | None:
         "DOSSIER_ABOUT_TEXT",
         "Бот для личных досье DDNet. Каждое досье проверяет модератор; без отдельного решения оно не публикуется.",
     ).strip()[:500]
-    return Settings(token, owner_id, database_path, about)
+    link_secret = os.getenv("DOSSIER_LINK_SECRET", "").strip()
+    source_bot_username = os.getenv("DOSSIER_SOURCE_BOT_USERNAME", "ddnet_podslushka_bot").strip().lstrip("@")
+    channel_username = os.getenv("DOSSIER_CHANNEL_USERNAME", "ddnet_podslushka").strip().lstrip("@")
+    if len(link_secret) < 32:
+        raise ConfigError("Укажите общий секрет длиной не менее 32 символов в DOSSIER_LINK_SECRET.")
+    if not source_bot_username or not channel_username:
+        raise ConfigError("Укажите DOSSIER_SOURCE_BOT_USERNAME и DOSSIER_CHANNEL_USERNAME.")
+    return Settings(token, owner_id, database_path, about, link_secret, source_bot_username, channel_username)

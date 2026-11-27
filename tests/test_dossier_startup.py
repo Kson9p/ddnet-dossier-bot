@@ -17,9 +17,18 @@ from services import dossier_process
 from tests.conftest import make_settings
 from tests.test_handlers_integration import make_text_update
 
-
 DOSSIER_TEST_TOKEN = "123456780:ExampleTokenForOfflineTestsOnly"
 OWNER_ID = 777
+DOSSIER_TEST_SECRET = "x" * 32
+SOURCE_BOT_USERNAME = "ddnet_podslushka_bot"
+CHANNEL_USERNAME = "ddnet_podslushka"
+
+
+def dossier_settings(token, database_path):
+    return Settings(
+        token, OWNER_ID, database_path, "About", DOSSIER_TEST_SECRET,
+        SOURCE_BOT_USERNAME, CHANNEL_USERNAME,
+    )
 
 
 def test_dossier_settings_use_host_environment(monkeypatch):
@@ -27,6 +36,9 @@ def test_dossier_settings_use_host_environment(monkeypatch):
     monkeypatch.setenv("DOSSIER_BOT_TOKEN", DOSSIER_TEST_TOKEN)
     monkeypatch.setenv("DOSSIER_OWNER_ID", str(OWNER_ID))
     monkeypatch.setenv("DOSSIER_DATABASE_PATH", "")
+    monkeypatch.setenv("DOSSIER_LINK_SECRET", DOSSIER_TEST_SECRET)
+    monkeypatch.setenv("DOSSIER_SOURCE_BOT_USERNAME", SOURCE_BOT_USERNAME)
+    monkeypatch.setenv("DOSSIER_CHANNEL_USERNAME", CHANNEL_USERNAME)
     settings = load_settings()
     assert settings.owner_id == OWNER_ID
     assert settings.database_path.name == "dossiers.db"
@@ -74,15 +86,16 @@ async def test_feedback_polling_gates_second_process(monkeypatch, tmp_path):
 
 
 async def test_dossier_process_waits_for_readiness_and_stops(monkeypatch, tmp_path):
-    settings = Settings(DOSSIER_TEST_TOKEN, OWNER_ID, tmp_path / "dossiers.db", "About")
+    settings = dossier_settings(DOSSIER_TEST_TOKEN, tmp_path / "dossiers.db")
     monkeypatch.setattr(dossier_process, "load_optional_settings", lambda: settings)
 
     launched = asyncio.Event()
     stopped = asyncio.Event()
     ready = asyncio.Event()
 
-    async def run_bot(settings, *, handle_signals):
+    async def run_bot(settings, *, handle_signals, serve_web):
         assert handle_signals is False
+        assert serve_web is True
         launched.set()
         try:
             await asyncio.Event().wait()
@@ -108,7 +121,7 @@ async def test_dossier_process_refuses_shared_settings(monkeypatch, tmp_path, ca
     feedback_db = tmp_path / "bot.db"
     token = "123456789:ASecondTokenForTheSameBot" if problem == "bot_id" else DOSSIER_TEST_TOKEN
     dossier_db = feedback_db if problem == "database" else tmp_path / "dossiers.db"
-    settings = Settings(token, OWNER_ID, dossier_db, "About")
+    settings = dossier_settings(token, dossier_db)
     monkeypatch.setattr(dossier_process, "load_optional_settings", lambda: settings)
     spawn = AsyncMock()
     monkeypatch.setattr(dossier_process, "run", spawn)
@@ -123,7 +136,7 @@ async def test_dossier_process_refuses_shared_settings(monkeypatch, tmp_path, ca
 
 
 async def test_dossier_start_replies_to_regular_account(monkeypatch, tmp_path):
-    settings = Settings(DOSSIER_TEST_TOKEN, OWNER_ID, tmp_path / "dossiers.db", "About")
+    settings = dossier_settings(DOSSIER_TEST_TOKEN, tmp_path / "dossiers.db")
     messages = []
     methods = []
     ordinary_user = 778

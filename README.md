@@ -15,6 +15,9 @@ variables in the same service:
 
 - `DOSSIER_BOT_TOKEN` for the **second** bot account.
 - `DOSSIER_OWNER_ID` for the owner's numeric Telegram user ID.
+- `DOSSIER_LINK_SECRET` for the signed handoff between the two bots (use the
+  same random value of at least 32 characters in both services).
+- `DOSSIER_BOT_USERNAME=ddnet_sliv_bot` so the existing bot can link back to it.
 
 `DOSSIER_DATABASE_PATH` is optional and defaults to
 `dossier_bot/data/dossiers.db`. Keep both database files on persistent storage.
@@ -85,6 +88,15 @@ it does not load the old bot's `BOT_TOKEN`, `OWNER_ID`, or database.
 
 The new bot uses `dossier_bot/data/dossiers.db` by default. Keep that path on
 persistent storage on hosting. Do not place the new token in the root `.env`.
+
+To require the existing channel and bot before submitting a dossier, add the
+dossier bot as an administrator of `@ddnet_podslushka` (membership checks need
+channel admin rights). Set the same `DOSSIER_LINK_SECRET` in both bot services.
+The dossier bot checks channel membership itself. To prove that the user started
+the existing `@ddnet_podslushka_bot`, that bot sends a short signed return link;
+no bot token is shared between services. The channel and source bot usernames
+can be changed with `DOSSIER_CHANNEL_USERNAME` and
+`DOSSIER_SOURCE_BOT_USERNAME` in the dossier service.
 
 ## New dossier bot behavior
 

@@ -37,6 +37,19 @@ class DossierStore:
                 created_at INTEGER NOT NULL
             )
         """)
+        await self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS source_bot_verifications (
+                user_id INTEGER PRIMARY KEY,
+                verified_at INTEGER NOT NULL
+            )
+        """)
+        await self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS verification_challenges (
+                nonce TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+        """)
         await self.conn.commit()
 
     async def close(self) -> None:
@@ -48,6 +61,37 @@ class DossierStore:
         if self.conn is None:
             raise RuntimeError("Dossier database is not open")
         return self.conn
+
+    async def issue_verification_challenge(self, user_id: int, nonce: str, created_at: int) -> None:
+        await self._db().execute("DELETE FROM verification_challenges WHERE created_at < ?", (created_at - 600,))
+        await self._db().execute(
+            "INSERT OR REPLACE INTO verification_challenges(nonce,user_id,created_at) VALUES(?,?,?)",
+            (nonce, user_id, created_at),
+        )
+        await self._db().commit()
+
+    async def accept_source_bot_proof(self, user_id: int, nonce: str, issued_at: int) -> bool:
+        cursor = await self._db().execute(
+            "SELECT created_at FROM verification_challenges WHERE nonce=? AND user_id=?",
+            (nonce, user_id),
+        )
+        row = await cursor.fetchone()
+        if not row or abs(int(row["created_at"]) - issued_at) > 600:
+            return False
+        await self._db().execute("DELETE FROM verification_challenges WHERE nonce=?", (nonce,))
+        await self._db().execute(
+            "INSERT OR REPLACE INTO source_bot_verifications(user_id,verified_at) VALUES(?,?)",
+            (user_id, int(time.time())),
+        )
+        await self._db().commit()
+        return True
+
+    async def has_source_bot_verification(self, user_id: int, *, max_age: int = 2_592_000) -> bool:
+        cursor = await self._db().execute(
+            "SELECT verified_at FROM source_bot_verifications WHERE user_id=?", (user_id,)
+        )
+        row = await cursor.fetchone()
+        return bool(row and int(row["verified_at"]) >= int(time.time()) - max_age)
 
     async def add(self, user_id: int, draft: dict) -> int:
         cursor = await self._db().execute(
