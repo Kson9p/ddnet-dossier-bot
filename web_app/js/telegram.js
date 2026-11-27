@@ -134,6 +134,21 @@ function haptic(style = 'light') {
   }
 }
 
+/** Show a native Telegram confirmation dialog, with a browser fallback. */
+function confirm(message) {
+  const app = sdk();
+  if (!insideTelegram() || !supports('6.2') || typeof app?.showConfirm !== 'function') {
+    return Promise.resolve(window.confirm(message));
+  }
+  return new Promise((resolve) => {
+    try {
+      app.showConfirm(message, (accepted) => resolve(accepted === true));
+    } catch {
+      resolve(window.confirm(message));
+    }
+  });
+}
+
 /** @param {'error' | 'success' | 'warning'} [type] */
 function notify(type = 'success') {
   if (!supports('6.1')) return;
@@ -149,6 +164,7 @@ export const telegram = {
   setBackButton,
   haptic,
   notify,
+  confirm,
   get available() {
     return insideTelegram();
   },

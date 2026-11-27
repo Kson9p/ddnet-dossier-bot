@@ -267,6 +267,11 @@ export function renderPlayer({ root, params, signal, goBack }) {
     votePending = true;
     const scrollY = window.scrollY;
     try {
+      const currentScore = player.rating?.myScore;
+      const confirmText = currentScore === null || currentScore === undefined
+        ? `Ты уверен, что хочешь поставить оценку ${score}? Изменить голос можно будет один раз и не раньше чем через неделю.`
+        : `Ты уверен, что хочешь изменить оценку с ${currentScore} на ${score}? После этого поменять её больше нельзя.`;
+      if (!await telegram.confirm(confirmText)) return;
       const result = await playersApi.votePlayer(player.id, score);
       player.rating = result.rating;
       votePending = false;
