@@ -229,9 +229,10 @@ export function renderPlayer({ root, params, signal, goBack }) {
       hint = `Твоя оценка: ${rating.myScore}. Можно изменить её один раз.`;
     }
 
-    const average = rating.average === null
-      ? '—'
-      : rating.average.toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const averageScore = rating.average === null
+      ? null
+      : Math.max(1, Math.min(7, Math.round(rating.average)));
+    const average = averageScore === null ? '—' : RATING_LABELS[averageScore - 1];
     const scores = Array.from({ length: 7 }, (_, index) => index + 1).map((score) => {
       const selected = rating.myScore === score;
       return el('button', {
