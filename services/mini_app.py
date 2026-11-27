@@ -8,17 +8,18 @@ import hmac
 import json
 import logging
 import os
-from pathlib import Path
 import re
 import time
+from pathlib import Path
 from urllib.parse import parse_qsl
 
 import aiohttp
-from aiohttp import web
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
+from aiohttp import web
 
 from dossier_bot.store import DossierStore
+from services.dossier_verification import verify_proof
 
 log = logging.getLogger(__name__)
 WEB_APP_DIR = Path(__file__).resolve().parent.parent / "web_app"
@@ -55,6 +56,7 @@ async def serve_mini_app_after_polling(
     store: DossierStore | None = None,
     bot: Bot | None = None,
     owner_id: int | None = None,
+    link_secret: str = "",
 ) -> None:
     """Start serving 10 seconds after Telegram polling is known to be ready."""
     if polling_ready is not None:
@@ -76,6 +78,36 @@ async def serve_mini_app_after_polling(
         return
 
     app = web.Application()
+
+    async def source_bot_verification(request: web.Request) -> web.Response:
+        if store is None or not link_secret:
+            raise web.HTTPServiceUnavailable()
+        if request.content_length is not None and request.content_length > 1024:
+            return web.json_response({"error": "payload_too_large"}, status=413)
+        try:
+            payload = await request.json()
+        except (json.JSONDecodeError, UnicodeDecodeError, aiohttp.ClientError):
+            return web.json_response({"error": "invalid_json"}, status=400)
+        if not isinstance(payload, dict):
+            return web.json_response({"error": "invalid_payload"}, status=400)
+        user_id = payload.get("user_id")
+        proof = payload.get("proof")
+        if type(user_id) is not int or user_id <= 0 or not isinstance(proof, str):
+            return web.json_response({"error": "invalid_payload"}, status=400)
+        verified = verify_proof(link_secret, proof, user_id)
+        if verified is None:
+            return web.json_response({"error": "invalid_proof"}, status=403)
+        if not await store.accept_source_bot_proof(user_id, *verified):
+            return web.json_response({"error": "challenge_expired"}, status=409)
+        if bot is not None:
+            try:
+                await bot.send_message(
+                    user_id,
+                    "✅ Бот «Подслушка» подтверждён. Теперь вернись в это сообщение и нажми «Проверить подписку».",
+                )
+            except TelegramAPIError as exc:
+                log.warning("Verification notice not delivered (%s).", type(exc).__name__)
+        return web.json_response({"verified": True}, headers={"Cache-Control": "no-store"})
 
     async def admin_session(request: web.Request) -> web.Response:
         is_admin = bool(
@@ -230,6 +262,7 @@ async def serve_mini_app_after_polling(
     app.router.add_get("/api/players/{player_id}/media/{media_index}", get_player_media)
     app.router.add_get("/api/players/{player_id}", get_player)
     app.router.add_get("/api/admin/session", admin_session)
+    app.router.add_post("/api/verification/source-bot", source_bot_verification)
     app.router.add_delete("/api/players/{player_id}", delete_player)
     # Keep developer notes and local tools out of the public route.
     app.router.add_static("/css/", WEB_APP_DIR / "css", show_index=False)

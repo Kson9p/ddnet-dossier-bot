@@ -708,7 +708,8 @@ async def run(
         if serve_web:
             website_task = asyncio.create_task(
                 serve_mini_app_after_polling(
-                    delay_seconds=10, store=store, bot=bot, owner_id=settings.owner_id
+                    delay_seconds=10, store=store, bot=bot, owner_id=settings.owner_id,
+                    link_secret=settings.link_secret,
                 ),
                 name="mini_app_web",
             )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from unittest.mock import AsyncMock
 
 import pytest
@@ -13,7 +14,9 @@ from aiogram.types import User
 import main as feedback
 from dossier_bot.config import ConfigError, Settings, load_settings
 from dossier_bot.main import get_channel_membership, run
+from dossier_bot.store import DossierStore
 from services import dossier_process
+from services.dossier_verification import make_proof, verify_proof
 from tests.conftest import make_settings
 from tests.test_handlers_integration import make_text_update
 
@@ -195,3 +198,21 @@ async def test_channel_membership_distinguishes_not_member_from_api_error():
             raise TelegramNetworkError(method=GetMe(), message="offline test")
 
     assert await get_channel_membership(ErrorBot(), CHANNEL_USERNAME, 123) is None
+
+
+async def test_source_bot_proof_is_one_time_and_bound_to_pending_challenge(tmp_path):
+    store = DossierStore(tmp_path / "verification.db")
+    await store.open()
+    try:
+        user_id = 99123
+        nonce = "abc123_-"
+        issued_at = int(time.time())
+        await store.issue_verification_challenge(user_id, nonce, issued_at)
+        proof = make_proof(DOSSIER_TEST_SECRET, user_id, nonce, issued_at)
+        verified = verify_proof(DOSSIER_TEST_SECRET, proof, user_id)
+        assert verified == (nonce, issued_at)
+        assert await store.accept_source_bot_proof(user_id, *verified)
+        assert await store.has_source_bot_verification(user_id)
+        assert not await store.accept_source_bot_proof(user_id, *verified)
+    finally:
+        await store.close()
