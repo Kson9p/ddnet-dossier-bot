@@ -110,6 +110,23 @@ export function renderHome({ root, signal, scrollY = 0 }) {
     ),
   );
 
+  const filtersScroller = el('div', {
+    class: 'chips',
+    attrs: { role: 'group', 'aria-label': 'Фильтры анкет' },
+    on: {
+      wheel: (event) => {
+        const scroller = event.currentTarget;
+        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+          const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+          const nextScroll = Math.max(0, Math.min(maxScroll, scroller.scrollLeft + event.deltaY));
+          if (nextScroll !== scroller.scrollLeft) {
+            scroller.scrollLeft = nextScroll;
+            event.preventDefault();
+          }
+        }
+      },
+    },
+  }, chipButtons);
 
   const sortSelect = el('select', {
     class: 'sort-select',
@@ -135,12 +152,12 @@ export function renderHome({ root, signal, scrollY = 0 }) {
       el('div', { class: 'home__top' }, [
         searchBox,
         el('div', { class: 'filter-row' }, [
-          el('div', {
-            class: 'chips',
-            attrs: { role: 'group', 'aria-label': 'Фильтры анкет' },
-          }, chipButtons),
-          el('label', { class: 'sort-control' }, [
-            icon('sort', { size: 16 }),
+          filtersScroller,
+          el('label', {
+            class: 'sort-control',
+            attrs: { title: 'Сортировка анкет' },
+          }, [
+            icon('sort', { size: 18 }),
             sortSelect,
           ]),
         ]),
