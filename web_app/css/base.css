@@ -1,29 +1,29 @@
 /* Базовые токены и каркас приложения */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --bg: #17212b;
-  --bg-page: #0e1620;
-  --surface: #1d2936;
-  --surface-2: #24313f;
-  --surface-3: #2d3c4d;
+  --bg: #eaf3ff;
+  --bg-page: #c9dff5;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-2: rgba(233, 244, 255, 0.88);
+  --surface-3: rgba(207, 226, 247, 0.95);
 
-  --text: #f3f7fb;
-  --text-2: #a9b9ca;
-  --text-3: #8b9eb1;
+  --text: #172f53;
+  --text-2: #3d587a;
+  --text-3: #607b9d;
 
-  --accent: #61adf0;
-  --accent-strong: #4d9fe8;
-  --accent-ink: #08131d;
-  --accent-soft: rgba(97, 173, 240, 0.14);
+  --accent: #2f77d2;
+  --accent-strong: #1d63bd;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(47, 119, 210, 0.13);
 
-  --green: #4cd07d;
-  --danger: #ff8181;
-  --danger-soft: rgba(255, 129, 129, 0.12);
+  --green: #15896c;
+  --danger: #b54451;
+  --danger-soft: rgba(181, 68, 81, 0.11);
 
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.14);
+  --border: rgba(63, 113, 172, 0.18);
+  --border-strong: rgba(45, 103, 176, 0.34);
 
   --radius-lg: 18px;
   --radius-md: 14px;
@@ -37,8 +37,8 @@
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     'Noto Sans', sans-serif;
 
-  --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.16);
-  --shadow-float: 0 16px 40px rgba(0, 0, 0, 0.42);
+  --shadow-card: 0 10px 28px rgba(29, 77, 143, 0.13);
+  --shadow-float: 0 18px 46px rgba(20, 61, 115, 0.24);
 }
 
 *,
@@ -64,9 +64,7 @@ body {
   font-size: 15px;
   line-height: 1.4;
   color: var(--text);
-  background:
-    radial-gradient(900px 500px at 50% -8%, rgba(97, 173, 240, 0.1), transparent 65%),
-    var(--bg-page);
+  background: linear-gradient(150deg, #dcecfb, #a9c9eb);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
@@ -124,8 +122,8 @@ img {
 }
 
 ::selection {
-  background: rgba(97, 173, 240, 0.34);
-  color: #fff;
+  background: rgba(57, 133, 222, 0.28);
+  color: var(--text);
 }
 
 :focus-visible {
@@ -141,14 +139,30 @@ img {
   min-height: 100vh;
   min-height: var(--tg-viewport-height, 100dvh);
   margin: 0 auto;
-  background: var(--bg);
+  isolation: isolate;
+  background: var(--bg-page);
   overflow-x: clip;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.035),
-    0 30px 90px rgba(0, 0, 0, 0.45);
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 24px 80px rgba(35, 82, 144, 0.28);
+}
+
+.app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  background:
+    linear-gradient(180deg, rgba(233, 244, 255, 0.56), rgba(228, 240, 255, 0.64) 50%, rgba(236, 246, 255, 0.76)),
+    url('../assets/sky-city.png') center center / cover no-repeat;
+  pointer-events: none;
 }
 
 .view {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   min-height: 100vh;

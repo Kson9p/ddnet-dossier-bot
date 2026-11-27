@@ -94,11 +94,11 @@ function init() {
     app.ready?.();
     app.expand?.();
     if (supports('6.1')) {
-      app.setHeaderColor?.('#17212b');
-      app.setBackgroundColor?.('#17212b');
+      app.setHeaderColor?.('#e8f3ff');
+      app.setBackgroundColor?.('#eaf3ff');
     }
     if (supports('7.10')) {
-      app.setBottomBarColor?.('#17212b');
+      app.setBottomBarColor?.('#eaf3ff');
     }
   } catch {
     // Не критично для работы интерфейса.
