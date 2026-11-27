@@ -95,13 +95,8 @@ export function renderHome({ root, signal, scrollY = 0 }) {
             } else {
               gender = option.id;
             }
-            sortSelect.value = sort;
+            updateFilterControls();
             telegram.haptic('light');
-            for (const chip of chipButtons) {
-              const active = chipIsActive(chip.dataset.filter);
-              chip.classList.toggle('is-active', active);
-              chip.setAttribute('aria-pressed', String(active));
-            }
             load({ reset: true });
           },
         },
@@ -128,38 +123,105 @@ export function renderHome({ root, signal, scrollY = 0 }) {
     },
   }, chipButtons);
 
-  const sortSelect = el('select', {
-    class: 'sort-select',
-    attrs: { 'aria-label': 'Сортировка анкет' },
+  const SORT_OPTIONS = [
+    { value: 'default', label: 'Сортировка' },
+    { value: 'points', label: 'Очки: больше' },
+    { value: 'rating_desc', label: 'Рейтинг: выше' },
+    { value: 'rating_asc', label: 'Рейтинг: ниже' },
+    { value: 'name_asc', label: 'Имя: A–Z' },
+    { value: 'name_desc', label: 'Имя: Z–A' },
+  ];
+  let sortMenuOpen = false;
+  const sortMenuButtons = SORT_OPTIONS.map((option) =>
+    el('button', {
+      class: 'sort-menu__option',
+      type: 'button',
+      attrs: { role: 'menuitemradio', 'aria-checked': String(sort === option.value) },
+      on: {
+        click: () => {
+          sort = option.value;
+          sortMenuOpen = false;
+          sortMenu.hidden = true;
+          sortButton.setAttribute('aria-expanded', 'false');
+          updateFilterControls();
+          telegram.haptic('light');
+          load({ reset: true });
+        },
+      },
+    }, [
+      el('span', { text: option.label }),
+      el('span', { class: 'sort-menu__check', attrs: { 'aria-hidden': 'true' }, text: '✓' }),
+    ]),
+  );
+  const sortMenu = el('div', {
+    class: 'sort-menu',
+    attrs: { role: 'menu', 'aria-label': 'Сортировка анкет', hidden: true },
+  }, sortMenuButtons);
+  const sortButton = el('button', {
+    class: 'sort-control',
+    type: 'button',
+    attrs: { 'aria-label': 'Сортировка анкет', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: 'Сортировка анкет' },
     on: {
-      change: (event) => {
-        sort = event.currentTarget.value;
-        telegram.haptic('light');
-        load({ reset: true });
+      click: () => {
+        sortMenuOpen = !sortMenuOpen;
+        sortMenu.hidden = !sortMenuOpen;
+        sortButton.setAttribute('aria-expanded', String(sortMenuOpen));
       },
     },
-  }, [
-    el('option', { value: 'default', text: 'Сортировка' }),
-    el('option', { value: 'points', text: 'Очки: больше' }),
-    el('option', { value: 'rating_desc', text: 'Рейтинг: выше' }),
-    el('option', { value: 'rating_asc', text: 'Рейтинг: ниже' }),
-    el('option', { value: 'name_asc', text: 'Имя: A–Z' }),
-    el('option', { value: 'name_desc', text: 'Имя: Z–A' }),
-  ]);
+  }, icon('sort', { size: 18 }));
+  const sortWrap = el('div', { class: 'sort-wrap' }, [sortButton, sortMenu]);
+  const scrollTrack = el('div', {
+    class: 'chips-scrollbar',
+    attrs: { 'aria-hidden': 'true' },
+  }, el('span', { class: 'chips-scrollbar__thumb' }));
+  const scrollThumb = scrollTrack.firstElementChild;
+
+  function updateScrollIndicator() {
+    const maxScroll = filtersScroller.scrollWidth - filtersScroller.clientWidth;
+    if (maxScroll <= 1) {
+      scrollTrack.hidden = true;
+      return;
+    }
+    scrollTrack.hidden = false;
+    const visibleWidth = Math.max(20, filtersScroller.clientWidth ** 2 / filtersScroller.scrollWidth);
+    const thumbTravel = filtersScroller.clientWidth - visibleWidth;
+    const thumbOffset = maxScroll > 0 ? filtersScroller.scrollLeft / maxScroll * thumbTravel : 0;
+    scrollThumb.style.width = `${visibleWidth}px`;
+    scrollThumb.style.transform = `translateX(${thumbOffset}px)`;
+  }
+
+  function updateFilterControls() {
+    for (const chip of chipButtons) {
+      const active = chipIsActive(chip.dataset.filter);
+      chip.classList.toggle('is-active', active);
+      chip.setAttribute('aria-pressed', String(active));
+    }
+    sortMenuButtons.forEach((menuButton, index) => {
+      const active = SORT_OPTIONS[index].value === sort;
+      menuButton.classList.toggle('is-active', active);
+      menuButton.setAttribute('aria-checked', String(active));
+    });
+  }
+
+  updateFilterControls();
+
+  function closeSortMenu(event) {
+    if (event?.type === 'keydown' && event.key !== 'Escape') return;
+    if (event?.type === 'pointerdown' && sortWrap.contains(event.target)) return;
+    if (!sortMenuOpen) return;
+    sortMenuOpen = false;
+    sortMenu.hidden = true;
+    sortButton.setAttribute('aria-expanded', 'false');
+  }
+
 
   const view = el('div', { class: 'view view--home' }, [
     el('main', { class: 'home' }, [
       el('div', { class: 'home__top' }, [
         searchBox,
         el('div', { class: 'filter-row' }, [
-          filtersScroller,
-          el('label', {
-            class: 'sort-control',
-            attrs: { title: 'Сортировка анкет' },
-          }, [
-            icon('sort', { size: 18 }),
-            sortSelect,
-          ]),
+          el('div', { class: 'chips-wrap' }, [filtersScroller, scrollTrack]),
+          sortWrap,
         ]),
       ]),
       el('div', { class: 'home__list' }, [
@@ -184,6 +246,12 @@ export function renderHome({ root, signal, scrollY = 0 }) {
   ]);
 
   root.replaceChildren(view);
+  filtersScroller.addEventListener('scroll', updateScrollIndicator, { passive: true });
+  document.addEventListener('pointerdown', closeSortMenu);
+  document.addEventListener('keydown', closeSortMenu);
+  const scrollObserver = new ResizeObserver(updateScrollIndicator);
+  scrollObserver.observe(filtersScroller);
+  updateScrollIndicator();
 
   const runSearch = debounce((value) => {
     const next = value.trim();
@@ -382,5 +450,9 @@ export function renderHome({ root, signal, scrollY = 0 }) {
 
   return () => {
     runSearch.cancel();
+    scrollObserver.disconnect();
+    filtersScroller.removeEventListener('scroll', updateScrollIndicator);
+    document.removeEventListener('pointerdown', closeSortMenu);
+    document.removeEventListener('keydown', closeSortMenu);
   };
 }
