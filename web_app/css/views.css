@@ -37,7 +37,7 @@
 /* ---------- Подробная анкета ---------- */
 
 .view--player {
-  padding-bottom: calc(86px + var(--safe-bottom));
+  padding-bottom: calc(26px + var(--safe-bottom));
 }
 
 .profile-hero {

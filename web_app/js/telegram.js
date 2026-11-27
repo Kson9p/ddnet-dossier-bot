@@ -149,6 +149,16 @@ function confirm(message) {
   });
 }
 
+/** Open a Telegram link in the Telegram client when available. */
+function openTelegramLink(url) {
+  const app = sdk();
+  if (insideTelegram() && typeof app?.openTelegramLink === 'function') {
+    app.openTelegramLink(url);
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 /** @param {'error' | 'success' | 'warning'} [type] */
 function notify(type = 'success') {
   if (!supports('6.1')) return;
@@ -165,6 +175,7 @@ export const telegram = {
   haptic,
   notify,
   confirm,
+  openTelegramLink,
   get available() {
     return insideTelegram();
   },

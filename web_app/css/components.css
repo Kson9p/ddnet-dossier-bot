@@ -675,23 +675,6 @@
   border-radius: 8px;
 }
 
-/* ---------- Нижняя панель действий ---------- */
-
-.action-bar {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  z-index: 40;
-  width: 100%;
-  max-width: 520px;
-  transform: translateX(-50%);
-  padding: 10px 16px calc(10px + var(--safe-bottom));
-  background: rgba(23, 33, 43, 0.92);
-  border-top: 1px solid var(--border);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-}
-
 .btn--danger {
   background: #9b433d;
   color: #fff;
@@ -702,20 +685,7 @@
 }
 
 .profile-admin-actions {
-  padding-bottom: calc(96px + env(safe-area-inset-bottom));
-}
-
-.action-bar__inner {
-  display: flex;
-  gap: 10px;
-}
-
-.action-bar__icon {
-  flex: 0 0 48px;
-}
-
-.action-bar__share {
-  flex: 1;
+  padding-bottom: 8px;
 }
 
 /* ---------- Оверлеи ---------- */
@@ -1131,4 +1101,63 @@
 
 .toast__text {
   min-width: 0;
+}
+
+/* ---------- Profile share sheet ---------- */
+
+.share-sheet__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.share-sheet__link-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.share-sheet__url {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  outline: none;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.share-sheet__url:focus {
+  border-color: var(--accent);
+}
+
+.share-sheet__link-row .btn {
+  min-height: 44px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.share-sheet__destinations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.share-sheet__destinations .btn {
+  min-height: 48px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.share-sheet__hint {
+  color: var(--text-3);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.share-sheet__footer {
+  justify-content: flex-end;
 }

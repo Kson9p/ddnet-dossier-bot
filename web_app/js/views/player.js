@@ -1,7 +1,7 @@
 import { playersApi } from '../api/playersApi.js';
 import { API_ERROR_TEXT } from '../api/errors.js';
 import { telegram } from '../telegram.js';
-import { copyText, el } from '../utils/dom.js';
+import { el } from '../utils/dom.js';
 import {
   formatHours,
   formatLastSeen,
@@ -9,7 +9,7 @@ import {
   formatNumber,
   formatRank,
 } from '../utils/format.js';
-import { openAboutSheet } from '../ui/aboutSheet.js';
+import { openProfileShareSheet } from '../ui/profileShareSheet.js';
 import {
   appHeader,
   button,
@@ -39,6 +39,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
   const content = el('div', { class: 'player-page' });
   let votePending = false;
   let currentIsAdmin = false;
+  let loadedPlayer = null;
 
   const view = el('div', { class: 'view view--player' }, [
     appHeader({
@@ -46,7 +47,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
       centered: true,
       onBack: goBack,
       actions: [
-        { iconName: 'info', label: 'О приложении', onClick: () => openAboutSheet() },
+        { iconName: 'more', label: 'Поделиться анкетой', onClick: () => loadedPlayer && openProfileShareSheet(loadedPlayer) },
       ],
     }),
     content,
@@ -101,6 +102,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
 
   /** @param {import('../api/types.js').PlayerRecord} player */
   function renderProfile(player, isAdmin = false) {
+    loadedPlayer = player;
     const stats = player.stats;
     const gallery = player.gallery;
     const liveLocation = player.online && (player.currentServer || player.currentMap);
@@ -200,7 +202,6 @@ export function renderPlayer({ root, params, signal, goBack }) {
     ]);
 
     content.replaceChildren(profile);
-    view.appendChild(actionBar(player));
   }
 
   function ratingSection(player) {
@@ -360,66 +361,6 @@ export function renderPlayer({ root, params, signal, goBack }) {
         el('span', { class: 'gallery__type' }, icon(isVideo ? 'video' : 'image', { size: 15 })),
       ],
     );
-  }
-
-  /** @param {import('../api/types.js').PlayerRecord} player */
-  function actionBar(player) {
-    const copyButton = el(
-      'button',
-      {
-        class: 'btn btn--secondary btn--icon action-bar__icon',
-        type: 'button',
-        attrs: { 'aria-label': 'Скопировать ник', title: 'Скопировать ник' },
-        on: {
-          click: async () => {
-            telegram.haptic('light');
-            const ok = await copyText(player.nick);
-            showToast(ok ? `Ник ${player.nick} скопирован` : 'Не удалось скопировать ник', {
-              iconName: ok ? 'copy' : 'alert',
-              tone: ok ? 'default' : 'danger',
-            });
-          },
-        },
-      },
-      icon('copy', { size: 20 }),
-    );
-
-    return el('div', { class: 'action-bar' }, [
-      el('div', { class: 'action-bar__inner' }, [
-        copyButton,
-        button({
-          label: 'Поделиться анкетой',
-          variant: 'primary',
-          iconName: 'share',
-          className: 'action-bar__share',
-          onClick: () => shareProfile(player),
-        }),
-      ]),
-    ]);
-  }
-
-  /** @param {import('../api/types.js').PlayerRecord} player */
-  async function shareProfile(player) {
-    telegram.haptic('light');
-
-    const url = new URL(window.location.href);
-    url.hash = `#/player/${encodeURIComponent(player.id)}`;
-    const text = `${player.nick} — анкета игрока DDNet.`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `${player.nick} · DDNet`, text, url: url.toString() });
-        return;
-      } catch (error) {
-        if (error?.name === 'AbortError') return;
-      }
-    }
-
-    const ok = await copyText(url.toString());
-    showToast(ok ? 'Ссылка на анкету скопирована' : 'Не удалось скопировать ссылку', {
-      iconName: ok ? 'check' : 'alert',
-      tone: ok ? 'default' : 'danger',
-    });
   }
 
   /** @param {any} error */
