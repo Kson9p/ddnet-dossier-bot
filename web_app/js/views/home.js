@@ -125,7 +125,6 @@ export function renderHome({ root, signal, scrollY = 0 }) {
 
   const SORT_OPTIONS = [
     { value: 'default', label: 'Сортировка' },
-    { value: 'points', label: 'Очки: больше' },
     { value: 'rating_desc', label: 'Рейтинг: выше' },
     { value: 'rating_asc', label: 'Рейтинг: ниже' },
     { value: 'name_asc', label: 'Имя: A–Z' },
