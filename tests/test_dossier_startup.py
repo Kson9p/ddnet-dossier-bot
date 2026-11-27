@@ -12,7 +12,7 @@ from aiogram.types import User
 
 import main as feedback
 from dossier_bot.config import ConfigError, Settings, load_settings
-from dossier_bot.main import run
+from dossier_bot.main import get_channel_membership, run
 from services import dossier_process
 from tests.conftest import make_settings
 from tests.test_handlers_integration import make_text_update
@@ -173,3 +173,25 @@ async def test_dossier_start_replies_to_regular_account(monkeypatch, tmp_path):
     ]
     assert owner_reply.chat_id == OWNER_ID
     assert "Панель владельца" in owner_reply.text
+
+
+async def test_channel_membership_distinguishes_not_member_from_api_error():
+    class FakeBot:
+        async def get_chat_member(self, chat_id, user_id):
+            assert chat_id == "@ddnet_podslushka"
+            assert user_id == 123
+            return type("Member", (), {"status": "member"})()
+
+    assert await get_channel_membership(FakeBot(), CHANNEL_USERNAME, 123) is True
+
+    class LeftBot(FakeBot):
+        async def get_chat_member(self, chat_id, user_id):
+            return type("Member", (), {"status": "left"})()
+
+    assert await get_channel_membership(LeftBot(), CHANNEL_USERNAME, 123) is False
+
+    class ErrorBot:
+        async def get_chat_member(self, chat_id, user_id):
+            raise TelegramNetworkError(method=GetMe(), message="offline test")
+
+    assert await get_channel_membership(ErrorBot(), CHANNEL_USERNAME, 123) is None

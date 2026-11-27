@@ -75,6 +75,18 @@ def button(text: str, data: str) -> InlineKeyboardButton:
     return InlineKeyboardButton(text=text, callback_data=data)
 
 
+async def get_channel_membership(bot: Bot, channel_username: str, user_id: int) -> bool | None:
+    """Return True/False for membership, None when Telegram cannot check it."""
+    try:
+        member = await bot.get_chat_member(f"@{channel_username}", user_id)
+    except TelegramAPIError as exc:
+        log.warning("Channel membership lookup failed (%s).", type(exc).__name__)
+        return None
+    return member.status in {"creator", "administrator", "member"} or (
+        member.status == "restricted" and bool(getattr(member, "is_member", False))
+    )
+
+
 def main_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [button("Добавить досье", "d:start")],
@@ -298,11 +310,18 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         if message.from_user is None:
             return
         parts = (message.text or "").split(maxsplit=1)
-        if len(parts) == 2:
+        if len(parts) == 2 and parts[1].startswith("p"):
             verified = verify_proof(settings.link_secret, parts[1], message.from_user.id)
             if verified and await store.accept_source_bot_proof(message.from_user.id, *verified):
                 await send(message, "✅ Бот «Подслушка» подтверждён. Вернись и нажми «Проверить подписку».", main_menu())
                 return
+            await send(
+                message,
+                "⚠️ Не удалось подтвердить запуск «Подслушки». Начни проверку заново. "
+                "Если повторится, проверь, что DOSSIER_LINK_SECRET одинаковый в обоих ботах.",
+                main_menu(),
+            )
+            return
         await send(message, "👋 Привет! Здесь можно подать досье о себе или обратиться в поддержку.", main_menu())
 
     @router.message(Command("help"))
@@ -331,13 +350,15 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         await state.clear()
         if callback.from_user is None or callback.message is None:
             await callback.answer("Не удалось проверить аккаунт", show_alert=True); return
-        is_member = await channel_membership(callback.from_user.id)
+        is_member = await get_channel_membership(bot, settings.channel_username, callback.from_user.id)
         source_verified = await store.has_source_bot_verification(callback.from_user.id)
-        if not is_member or not source_verified:
+        if is_member is not True or not source_verified:
             nonce = secrets.token_urlsafe(6)
             await store.issue_verification_challenge(callback.from_user.id, nonce, int(time.time()))
             missing = []
-            if not is_member:
+            if is_member is None:
+                missing.append(f"не удалось проверить канал @{settings.channel_username}: боту досье нужны права администратора")
+            elif not is_member:
                 missing.append("подпишись на канал")
             if not source_verified:
                 missing.append("запусти бота «Подслушка» и вернись по ссылке из него")
@@ -353,22 +374,18 @@ def build_user_router(bot: Bot, settings: Settings, store: DossierStore) -> Rout
         if callback.message:
             await callback.message.answer("Выбери категорию:", reply_markup=gender_keyboard())
 
-    async def channel_membership(user_id: int) -> bool:
-        try:
-            member = await bot.get_chat_member(f"@{settings.channel_username}", user_id)
-        except TelegramAPIError as exc:
-            log.warning("Channel membership lookup failed (%s).", type(exc).__name__)
-            return False
-        return member.status in {"creator", "administrator", "member"} or (
-            member.status == "restricted" and bool(getattr(member, "is_member", False))
-        )
-
     @router.callback_query(F.data == "d:verify")
     async def verify_subscription(callback: CallbackQuery, state: FSMContext) -> None:
         if callback.from_user is None or callback.message is None:
             await callback.answer("Не удалось проверить аккаунт", show_alert=True); return
-        is_member = await channel_membership(callback.from_user.id)
+        is_member = await get_channel_membership(bot, settings.channel_username, callback.from_user.id)
         source_verified = await store.has_source_bot_verification(callback.from_user.id)
+        if is_member is None:
+            await callback.answer(
+                f"Не удалось проверить канал @{settings.channel_username}. Боту досье нужны права администратора в канале.",
+                show_alert=True,
+            )
+            return
         if not is_member or not source_verified:
             missing = []
             if not is_member:
