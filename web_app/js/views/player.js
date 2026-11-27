@@ -21,13 +21,13 @@ import { openLightbox } from '../ui/lightbox.js';
 import { showToast } from '../ui/toast.js';
 
 const RATING_LABELS = [
-  'Ужасно',
-  'Плохо',
-  'Так себе',
-  'Нормально',
-  'Хорошо',
-  'Очень хорошо',
-  'Отлично',
+  'sub 3',
+  'sub 5',
+  'ltn',
+  'mtn',
+  'htn',
+  'chad',
+  'true adam',
 ];
 
 /**
