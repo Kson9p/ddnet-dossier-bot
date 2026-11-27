@@ -16,7 +16,6 @@ import { icon } from '../ui/icons.js';
 
 const FILTERS = [
   { id: 'all', label: 'Все' },
-  { id: 'points', label: 'По очкам' },
   { id: 'boy', label: 'Парень' },
   { id: 'girl', label: 'Девушка' },
 ];
@@ -72,8 +71,7 @@ export function renderHome({ root, signal, scrollY = 0 }) {
   ]);
 
   const chipIsActive = (id) => {
-    if (id === 'all') return sort !== 'points' && gender === '';
-    if (id === 'points') return sort === 'points';
+    if (id === 'all') return gender === '';
     return gender === id;
   };
 
@@ -90,8 +88,6 @@ export function renderHome({ root, signal, scrollY = 0 }) {
             if (option.id === 'all') {
               sort = 'default';
               gender = '';
-            } else if (option.id === 'points') {
-              sort = sort === 'points' ? 'default' : 'points';
             } else {
               gender = option.id;
             }
