@@ -412,11 +412,6 @@
   transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
-.rating-score__value {
-  font-size: 15px;
-  line-height: 1;
-}
-
 .rating-score__label {
   font-size: 10px;
   font-weight: 500;

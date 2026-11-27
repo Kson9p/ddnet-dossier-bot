@@ -238,15 +238,12 @@ export function renderPlayer({ root, params, signal, goBack }) {
         class: `rating-score${selected ? ' rating-score--selected' : ''}`,
         type: 'button',
         attrs: {
-          'aria-label': `Поставить оценку ${score} — ${RATING_LABELS[score - 1]}`,
+          'aria-label': `Поставить оценку: ${RATING_LABELS[score - 1]}`,
           'aria-pressed': String(selected),
           disabled: !canVote || votePending,
         },
         on: { click: () => submitVote(player, score) },
-      }, [
-        el('span', { class: 'rating-score__value', text: String(score) }),
-        el('span', { class: 'rating-score__label', text: RATING_LABELS[score - 1] }),
-      ]);
+      }, el('span', { class: 'rating-score__label', text: RATING_LABELS[score - 1] }));
     });
 
     return el('section', { class: 'section rating-section' }, [
@@ -284,8 +281,8 @@ export function renderPlayer({ root, params, signal, goBack }) {
       const selectedLabel = RATING_LABELS[score - 1];
       const currentLabel = currentScore ? RATING_LABELS[currentScore - 1] : '';
       const confirmText = currentScore === null || currentScore === undefined
-        ? `Ты уверен, что хочешь поставить оценку ${score} — «${selectedLabel}»? Изменить голос можно будет один раз и не раньше чем через неделю.`
-        : `Ты уверен, что хочешь изменить оценку с ${currentScore} — «${currentLabel}» на ${score} — «${selectedLabel}»? После этого поменять её больше нельзя.`;
+        ? `Ты уверен, что хочешь поставить оценку «${selectedLabel}»? Изменить голос можно будет один раз и не раньше чем через неделю.`
+        : `Ты уверен, что хочешь изменить оценку с «${currentLabel}» на «${selectedLabel}»? После этого поменять её больше нельзя.`;
       if (!await telegram.confirm(confirmText)) return;
       const result = await playersApi.votePlayer(player.id, score);
       player.rating = result.rating;
