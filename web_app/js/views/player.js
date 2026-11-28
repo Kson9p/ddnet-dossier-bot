@@ -10,6 +10,7 @@ import {
   formatRank,
 } from '../utils/format.js';
 import { openProfileShareSheet } from '../ui/profileShareSheet.js';
+import { confirmDialog } from '../ui/confirmDialog.js';
 import {
   appHeader,
   button,
@@ -285,7 +286,7 @@ export function renderPlayer({ root, params, signal, goBack }) {
       const confirmText = currentScore === null || currentScore === undefined
         ? `Ты уверен, что хочешь поставить оценку «${selectedLabel}»? Изменить голос можно будет один раз и не раньше чем через неделю.`
         : `Ты уверен, что хочешь изменить оценку с «${currentLabel}» на «${selectedLabel}»? После этого поменять её больше нельзя.`;
-      if (!await telegram.confirm(confirmText)) return;
+      if (!await confirmDialog(confirmText)) return;
       const result = await playersApi.votePlayer(player.id, score);
       player.rating = result.rating;
       votePending = false;
