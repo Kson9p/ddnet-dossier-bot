@@ -121,10 +121,10 @@ export function playerCard(player) {
                 ? el('span', {
                     class: 'player-card__rating',
                     attrs: {
-                      title: `Средняя оценка ${player.rating.average.toFixed(1)} из 7 · ${player.rating.count} голосов`,
-                      'aria-label': `Средняя оценка ${player.rating.average.toFixed(1)} из 7: ${ratingLabels[roundedRating - 1]}`,
+                      title: `Категория средней оценки: ${ratingLabels[roundedRating - 1]}`,
+                      'aria-label': `Категория средней оценки: ${ratingLabels[roundedRating - 1]}`,
                     },
-                    text: `${player.rating.average.toFixed(1)} · ${ratingLabels[roundedRating - 1]}`,
+                    text: ratingLabels[roundedRating - 1],
                   })
                 : null,
             ]),
