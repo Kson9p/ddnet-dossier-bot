@@ -112,7 +112,6 @@ export function openAboutSheet() {
         ),
       ]),
       el('div', { class: 'sheet__footer' }, [
-        el('span', { class: 'sheet__version', text: 'Версия 0.1' }),
         button({ label: 'Понятно', variant: 'primary', onClick: close }),
       ]),
     ],
