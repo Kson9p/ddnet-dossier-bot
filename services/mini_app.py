@@ -229,6 +229,8 @@ async def serve_mini_app_after_polling(
             record.pop("gallery")
             record["stats"] = {key: record["stats"][key] for key in ("points", "globalRank", "mapsFinished", "hours")}
             record["lastSeenHoursAgo"] = None
+            if store is not None:
+                record["rating"] = await store.get_vote_summary(int(row["id"]))
         else:
             record.pop("gender", None)
             if store is not None:

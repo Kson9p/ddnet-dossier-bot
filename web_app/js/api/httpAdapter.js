@@ -67,6 +67,7 @@ function normalizeSummary(raw) {
       mapsFinished: optionalNumber(raw.stats.mapsFinished),
       hours: optionalNumber(raw.stats.hours),
     },
+    rating: normalizeRating(raw.rating),
   };
 }
 

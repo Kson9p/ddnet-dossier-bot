@@ -61,6 +61,7 @@
  * @property {string[]} badges
  * @property {number} lastSeenHoursAgo
  * @property {{points: number, globalRank: number, mapsFinished: number, hours: number}} stats
+ * @property {{count: number, average: number | null}} rating
  */
 
 /**

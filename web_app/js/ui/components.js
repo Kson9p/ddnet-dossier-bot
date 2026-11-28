@@ -78,6 +78,9 @@ export function appHeader({
  */
 export function playerCard(player) {
   const stats = [];
+  const ratingLabels = ['sub 3', 'sub 5', 'ltn', 'mtn', 'htn', 'chad', 'true adam'];
+  const hasRating = player.rating?.count > 0 && Number.isFinite(player.rating.average);
+  const roundedRating = hasRating ? Math.max(1, Math.min(7, Math.round(player.rating.average))) : null;
   if (player.stats.points !== null) stats.push(statCell(formatNumber(player.stats.points), 'очков'));
   if (player.stats.hours !== null) stats.push(statCell(formatNumber(player.stats.hours), 'часов'));
   return el(
@@ -112,7 +115,19 @@ export function playerCard(player) {
       el('div', { class: 'player-card__body' }, [
         el('div', { class: 'player-card__row' }, [
           el('div', { class: 'player-card__titles' }, [
-            el('h2', { class: 'player-card__nick', text: player.nick }),
+            el('div', { class: 'player-card__nick-row' }, [
+              el('h2', { class: 'player-card__nick', text: player.nick }),
+              hasRating
+                ? el('span', {
+                    class: 'player-card__rating',
+                    attrs: {
+                      title: `Средняя оценка ${player.rating.average.toFixed(1)} из 7 · ${player.rating.count} голосов`,
+                      'aria-label': `Средняя оценка ${player.rating.average.toFixed(1)} из 7: ${ratingLabels[roundedRating - 1]}`,
+                    },
+                    text: `${player.rating.average.toFixed(1)} · ${ratingLabels[roundedRating - 1]}`,
+                  })
+                : null,
+            ]),
             el('span', {
               class: `player-card__category player-card__category--${player.gender}`,
               text: player.gender === 'girl' ? 'Девушка' : 'Парень',
