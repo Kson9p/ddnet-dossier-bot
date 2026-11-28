@@ -496,11 +496,14 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
   min-width: 0;
 }
 
 .player-card__nick {
-  flex: 1;
+  flex: 0 1 auto;
+  width: max-content;
+  max-width: 100%;
   min-width: 0;
   font-size: 16.5px;
   font-weight: 600;
@@ -508,6 +511,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.player-card__nick-row.has-rating .player-card__nick {
+  max-width: calc(100% - 74px);
 }
 
 .player-card__rating {

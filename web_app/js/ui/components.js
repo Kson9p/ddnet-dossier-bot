@@ -115,7 +115,7 @@ export function playerCard(player) {
       el('div', { class: 'player-card__body' }, [
         el('div', { class: 'player-card__row' }, [
           el('div', { class: 'player-card__titles' }, [
-            el('div', { class: 'player-card__nick-row' }, [
+            el('div', { class: `player-card__nick-row${hasRating ? ' has-rating' : ''}` }, [
               el('h2', { class: 'player-card__nick', text: player.nick }),
               hasRating
                 ? el('span', {
