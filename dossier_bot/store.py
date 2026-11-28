@@ -58,9 +58,25 @@ class DossierStore:
                 created_at INTEGER NOT NULL,
                 changed_at INTEGER,
                 change_count INTEGER NOT NULL DEFAULT 0 CHECK(change_count BETWEEN 0 AND 1),
+                voter_telegram_id INTEGER,
+                voter_username TEXT,
+                voter_display_name TEXT,
                 PRIMARY KEY(dossier_id, voter_key)
             )
         """)
+        vote_columns = {
+            row["name"]
+            for row in await (await self.conn.execute("PRAGMA table_info(dossier_votes)")).fetchall()
+        }
+        for column, definition in (
+            ("voter_telegram_id", "INTEGER"),
+            ("voter_username", "TEXT"),
+            ("voter_display_name", "TEXT"),
+        ):
+            if column not in vote_columns:
+                await self.conn.execute(
+                    f"ALTER TABLE dossier_votes ADD COLUMN {column} {definition}"
+                )
         await self.conn.commit()
 
     async def close(self) -> None:
@@ -127,8 +143,41 @@ class DossierStore:
             "changeUsed": change_count >= 1,
         }
 
+    async def get_vote_breakdown(self, dossier_id: int) -> list[dict]:
+        cursor = await self._db().execute(
+            "SELECT score, COUNT(*) AS vote_count FROM dossier_votes WHERE dossier_id=? GROUP BY score",
+            (dossier_id,),
+        )
+        counts = {int(row["score"]): int(row["vote_count"]) for row in await cursor.fetchall()}
+        cursor = await self._db().execute(
+            "SELECT score, voter_telegram_id, voter_username, voter_display_name, created_at "
+            "FROM dossier_votes WHERE dossier_id=? AND voter_telegram_id IS NOT NULL "
+            "ORDER BY created_at DESC",
+            (dossier_id,),
+        )
+        voters: dict[int, list[dict]] = {score: [] for score in range(1, 8)}
+        for row in await cursor.fetchall():
+            voters[int(row["score"])].append({
+                "userId": int(row["voter_telegram_id"]),
+                "username": row["voter_username"],
+                "displayName": row["voter_display_name"] or "Пользователь Telegram",
+                "createdAt": int(row["created_at"]),
+            })
+        return [
+            {"score": score, "count": counts.get(score, 0), "voters": voters[score]}
+            for score in range(7, 0, -1)
+        ]
+
     async def cast_vote(
-        self, dossier_id: int, voter_key: str, score: int, *, now: int | None = None
+        self,
+        dossier_id: int,
+        voter_key: str,
+        score: int,
+        *,
+        telegram_user_id: int | None = None,
+        username: str | None = None,
+        display_name: str | None = None,
+        now: int | None = None,
     ) -> str:
         if type(score) is not int or not 1 <= score <= 7:
             raise ValueError("Vote score must be an integer between 1 and 7")
@@ -143,8 +192,10 @@ class DossierStore:
             existing = await cursor.fetchone()
             if existing is None:
                 await connection.execute(
-                    "INSERT INTO dossier_votes(dossier_id,voter_key,score,created_at) VALUES(?,?,?,?)",
-                    (dossier_id, voter_key, score, timestamp),
+                    "INSERT INTO dossier_votes("
+                    "dossier_id,voter_key,score,created_at,voter_telegram_id,voter_username,voter_display_name"
+                    ") VALUES(?,?,?,?,?,?,?)",
+                    (dossier_id, voter_key, score, timestamp, telegram_user_id, username, display_name),
                 )
                 outcome = "created"
             elif int(existing["score"]) == score:
@@ -159,6 +210,12 @@ class DossierStore:
                     (score, timestamp, dossier_id, voter_key),
                 )
                 outcome = "changed"
+            if telegram_user_id is not None:
+                await connection.execute(
+                    "UPDATE dossier_votes SET voter_telegram_id=?, voter_username=?, voter_display_name=? "
+                    "WHERE dossier_id=? AND voter_key=?",
+                    (telegram_user_id, username, display_name, dossier_id, voter_key),
+                )
             await connection.commit()
             return outcome
         except BaseException:

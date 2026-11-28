@@ -15,6 +15,7 @@ const adapter = createHttpPlayersApi();
 export const playersApi = {
   isAdmin: () => adapter.isAdmin(),
   deletePlayer: (id) => adapter.deletePlayer(id),
+  getVoteDetails: (id) => adapter.getVoteDetails(id),
   votePlayer: (id, score) => adapter.votePlayer(id, score),
   /** @param {import('./types.js').PlayerListParams} [params] */
   getPlayers: (params = {}) => adapter.getPlayers(params),

@@ -941,6 +941,124 @@
   padding: 0 14px;
 }
 
+/* ---------- Админский просмотр голосов ---------- */
+
+.rating-section > .section-head {
+  align-items: center;
+}
+
+.rating-section > .section-head .icon-button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--accent-strong);
+}
+
+.vote-details__body {
+  min-height: 120px;
+}
+
+.vote-details__scores,
+.vote-details__voters {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.vote-details__score,
+.vote-details__voter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  text-align: left;
+}
+
+.vote-details__score:not(:disabled),
+.vote-details__voter:not(.vote-details__voter--plain) {
+  cursor: pointer;
+}
+
+.vote-details__score:not(:disabled):active,
+.vote-details__voter:not(.vote-details__voter--plain):active {
+  background: var(--accent-soft);
+}
+
+.vote-details__score-label {
+  flex: 1;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vote-details__count {
+  min-width: 26px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.vote-details__score:disabled {
+  opacity: 0.58;
+}
+
+.vote-details__arrow {
+  color: var(--text-3);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.vote-details__back {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0 6px;
+}
+
+.vote-details__selected {
+  margin: 4px 0 12px;
+  color: var(--accent-strong);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.vote-details__voter {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.vote-details__voter-name {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vote-details__voter-username,
+.vote-details__old-votes {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.vote-details__old-votes {
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.vote-details__footer {
+  justify-content: flex-end;
+}
+
 /* ---------- Нижняя шторка ---------- */
 
 .sheet {

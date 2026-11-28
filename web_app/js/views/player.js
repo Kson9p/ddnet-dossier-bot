@@ -10,10 +10,12 @@ import {
   formatRank,
 } from '../utils/format.js';
 import { openProfileShareSheet } from '../ui/profileShareSheet.js';
+import { openVoteDetailsSheet } from '../ui/voteDetailsSheet.js';
 import { confirmDialog } from '../ui/confirmDialog.js';
 import {
   appHeader,
   button,
+  iconButton,
   sectionTitle,
   stateView,
 } from '../ui/components.js';
@@ -250,7 +252,15 @@ export function renderPlayer({ root, params, signal, goBack }) {
     });
 
     return el('section', { class: 'section rating-section' }, [
-      sectionTitle('Оценка анкеты'),
+      sectionTitle('Оценка анкеты', {
+        extra: currentIsAdmin
+          ? iconButton({
+              iconName: 'users',
+              label: 'Посмотреть, кто голосовал',
+              onClick: () => openVoteDetailsSheet(player, () => playersApi.getVoteDetails(player.id)),
+            })
+          : null,
+      }),
       el('div', { class: 'rating-card' }, [
         el('div', { class: 'rating-summary' }, [
           el('strong', { class: 'rating-summary__average', text: average }),
@@ -284,8 +294,8 @@ export function renderPlayer({ root, params, signal, goBack }) {
       const selectedLabel = RATING_LABELS[score - 1];
       const currentLabel = currentScore ? RATING_LABELS[currentScore - 1] : '';
       const confirmText = currentScore === null || currentScore === undefined
-        ? `Ты уверен, что хочешь поставить оценку «${selectedLabel}»? Изменить голос можно будет один раз и не раньше чем через неделю.`
-        : `Ты уверен, что хочешь изменить оценку с «${currentLabel}» на «${selectedLabel}»? После этого поменять её больше нельзя.`;
+        ? `Ты уверен, что хочешь поставить оценку «${selectedLabel}»? Создатель приложения увидит твоё имя Telegram и, если указан, username вместе с оценкой. Изменить голос можно будет один раз и не раньше чем через неделю.`
+        : `Ты уверен, что хочешь изменить оценку с «${currentLabel}» на «${selectedLabel}»? Создатель приложения увидит имя Telegram и, если указан, username. После этого поменять её больше нельзя.`;
       if (!await confirmDialog(confirmText)) return;
       const result = await playersApi.votePlayer(player.id, score);
       player.rating = result.rating;

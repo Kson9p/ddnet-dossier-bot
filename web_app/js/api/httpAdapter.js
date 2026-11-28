@@ -202,6 +202,36 @@ export function createHttpPlayersApi(options = {}) {
     }
   }
 
+  async function getVoteDetails(id) {
+    const initData = getInitData();
+    if (!initData) {
+      throw new PlayersApiError('forbidden', 'Список голосов доступен только владельцу в Telegram.');
+    }
+    let response;
+    try {
+      response = await fetchImpl(`${baseUrl}/admin/players/${encodeURIComponent(id)}/votes`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json', 'X-Telegram-Init-Data': initData },
+      });
+    } catch {
+      throw new PlayersApiError('network', 'Не удалось загрузить голоса.');
+    }
+    if (response.status === 403) {
+      throw new PlayersApiError('forbidden', 'Список голосов доступен только владельцу.');
+    }
+    if (!response.ok) {
+      throw new PlayersApiError('server', `Не удалось загрузить голоса (${response.status}).`, { status: response.status });
+    }
+    try {
+      const payload = await response.json();
+      if (!isObject(payload) || !Array.isArray(payload.scores)) throw new Error('invalid');
+      return payload.scores;
+    } catch {
+      throw new PlayersApiError('invalid_data', 'Сервер вернул некорректный список голосов.', { status: 502 });
+    }
+  }
+
   async function deletePlayer(id) {
     const initData = getInitData();
     if (!initData) {
@@ -269,6 +299,7 @@ export function createHttpPlayersApi(options = {}) {
 
   return {
     isAdmin,
+    getVoteDetails,
     deletePlayer,
     votePlayer,
     /** @param {import('./types.js').PlayerListParams} [params] */

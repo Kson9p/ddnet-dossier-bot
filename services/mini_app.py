@@ -25,8 +25,8 @@ log = logging.getLogger(__name__)
 WEB_APP_DIR = Path(__file__).resolve().parent.parent / "web_app"
 
 
-def _telegram_user_id(init_data: str, bot_token: str) -> int | None:
-    """Validate Telegram Mini App initData and return its signed user ID."""
+def _telegram_user_data(init_data: str, bot_token: str) -> dict | None:
+    """Validate Telegram Mini App initData and return its signed user data."""
     if not init_data or len(init_data) > 8192:
         return None
     try:
@@ -44,9 +44,15 @@ def _telegram_user_id(init_data: str, bot_token: str) -> int | None:
         check_string = "\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
         secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
         expected = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
-        return user_id if hmac.compare_digest(received_hash, expected) else None
+        return user if hmac.compare_digest(received_hash, expected) else None
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         return None
+
+
+def _telegram_user_id(init_data: str, bot_token: str) -> int | None:
+    user = _telegram_user_data(init_data, bot_token)
+    user_id = user.get("id") if user else None
+    return user_id if type(user_id) is int else None
 
 
 def _telegram_owner(init_data: str, bot_token: str, owner_id: int) -> bool:
@@ -181,12 +187,44 @@ async def serve_mini_app_after_polling(
         if type(score) is not int or not 1 <= score <= 7:
             return web.json_response({"error": "invalid_score"}, status=400)
         voter_key = _vote_key(bot.token, user_id)
-        outcome = await store.cast_vote(dossier_id, voter_key, score)
+        user_data = _telegram_user_data(
+            request.headers.get("X-Telegram-Init-Data", ""), bot.token
+        ) or {}
+        display_name = " ".join(
+            part.strip() for part in (user_data.get("first_name"), user_data.get("last_name"))
+            if isinstance(part, str) and part.strip()
+        )[:120] or "Пользователь Telegram"
+        username = user_data.get("username")
+        if not isinstance(username, str):
+            username = None
+        else:
+            username = username.removeprefix("@").strip()[:64] or None
+        outcome = await store.cast_vote(
+            dossier_id, voter_key, score, telegram_user_id=user_id,
+            username=username, display_name=display_name,
+        )
         rating = await store.get_vote_summary(dossier_id, voter_key)
         return web.json_response(
             {"outcome": outcome, "rating": rating},
             headers={"Cache-Control": "no-store"},
         )
+
+    async def admin_player_votes(request: web.Request) -> web.Response:
+        if store is None or bot is None or owner_id is None:
+            raise web.HTTPServiceUnavailable()
+        if not _telegram_owner(
+            request.headers.get("X-Telegram-Init-Data", ""), bot.token, owner_id
+        ):
+            raise web.HTTPForbidden()
+        try:
+            dossier_id = int(request.match_info["player_id"])
+        except ValueError:
+            raise web.HTTPNotFound() from None
+        row = await store.get(dossier_id)
+        if row is None or row.get("status") != "approved":
+            raise web.HTTPNotFound()
+        scores = await store.get_vote_breakdown(dossier_id)
+        return web.json_response({"scores": scores}, headers={"Cache-Control": "no-store"})
 
     async def public_record(
         row: dict, *, summary: bool = False, voter_key: str | None = None
@@ -319,6 +357,7 @@ async def serve_mini_app_after_polling(
     app.router.add_get("/api/players/{player_id}/media/{media_index}", get_player_media)
     app.router.add_get("/api/players/{player_id}", get_player)
     app.router.add_post("/api/players/{player_id}/vote", cast_vote)
+    app.router.add_get("/api/admin/players/{player_id}/votes", admin_player_votes)
     app.router.add_get("/api/admin/session", admin_session)
     app.router.add_post("/api/verification/source-bot", source_bot_verification)
     app.router.add_delete("/api/players/{player_id}", delete_player)
