@@ -215,8 +215,10 @@ class DossierStore:
                     row["nickname"].casefold(),
                 ))
             else:
+                # Profiles without votes have no established score, so treat them
+                # as zero and put them first in the low-to-high order.
                 rows.sort(key=lambda row: (
-                    averages.get(int(row["id"])) is None,
+                    averages.get(int(row["id"])) is not None,
                     averages.get(int(row["id"]), 0),
                     row["nickname"].casefold(),
                 ))
