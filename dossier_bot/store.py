@@ -143,6 +143,13 @@ class DossierStore:
             "changeUsed": change_count >= 1,
         }
 
+    async def update_voter_username(self, dossier_id: int, telegram_user_id: int, username: str) -> None:
+        await self._db().execute(
+            "UPDATE dossier_votes SET voter_username=? WHERE dossier_id=? AND voter_telegram_id=?",
+            (username, dossier_id, telegram_user_id),
+        )
+        await self._db().commit()
+
     async def get_vote_breakdown(self, dossier_id: int) -> list[dict]:
         cursor = await self._db().execute(
             "SELECT score, COUNT(*) AS vote_count FROM dossier_votes WHERE dossier_id=? GROUP BY score",

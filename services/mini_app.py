@@ -232,6 +232,20 @@ async def serve_mini_app_after_polling(
         if row is None or row.get("status") != "approved":
             raise web.HTTPNotFound()
         scores = await store.get_vote_breakdown(dossier_id)
+        for category in scores:
+            for voter in category["voters"]:
+                if voter.get("username"):
+                    continue
+                try:
+                    chat = await bot.get_chat(voter["userId"])
+                except TelegramAPIError:
+                    continue
+                chat_username = getattr(chat, "username", None)
+                if isinstance(chat_username, str) and chat_username.strip():
+                    voter["username"] = chat_username.strip()[:64]
+                    await store.update_voter_username(
+                        dossier_id, voter["userId"], voter["username"]
+                    )
         return web.json_response({"scores": scores}, headers={"Cache-Control": "no-store"})
 
     async def public_record(
