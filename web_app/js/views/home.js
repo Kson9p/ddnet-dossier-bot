@@ -222,7 +222,6 @@ export function renderHome({ root, signal, scrollY = 0 }) {
       el('div', { class: 'home__list' }, [
         el('div', { class: 'section-head' }, [
           el('h2', { class: 'section-title' }, [sectionLabel, countPill]),
-          el('span', { class: 'section-hint', text: 'только одобренные' }),
         ]),
         listHost,
       ]),
