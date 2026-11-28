@@ -513,10 +513,6 @@
   text-overflow: ellipsis;
 }
 
-.player-card__nick-row.has-rating .player-card__nick {
-  max-width: calc(100% - 74px);
-}
-
 .player-card__rating {
   flex: 0 0 auto;
   max-width: 88px;

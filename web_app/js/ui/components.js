@@ -116,7 +116,11 @@ export function playerCard(player) {
         el('div', { class: 'player-card__row' }, [
           el('div', { class: 'player-card__titles' }, [
             el('div', { class: `player-card__nick-row${hasRating ? ' has-rating' : ''}` }, [
-              el('h2', { class: 'player-card__nick', text: player.nick }),
+              el('h2', {
+                class: 'player-card__nick',
+                text: hasRating && player.nick.length > 7 ? `${player.nick.slice(0, 7)}…` : player.nick,
+                attrs: { title: player.nick },
+              }),
               hasRating
                 ? el('span', {
                     class: 'player-card__rating',
