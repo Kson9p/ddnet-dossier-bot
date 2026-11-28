@@ -199,6 +199,14 @@ async def serve_mini_app_after_polling(
             username = None
         else:
             username = username.removeprefix("@").strip()[:64] or None
+        if username is None:
+            try:
+                chat = await bot.get_chat(user_id)
+                chat_username = getattr(chat, "username", None)
+                username = chat_username.strip()[:64] or None if isinstance(chat_username, str) else None
+            except TelegramAPIError:
+                # initData remains the trusted identity; the public username is optional.
+                pass
         outcome = await store.cast_vote(
             dossier_id, voter_key, score, telegram_user_id=user_id,
             username=username, display_name=display_name,
